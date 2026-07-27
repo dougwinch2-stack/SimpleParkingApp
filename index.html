@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b4f6c">
-  <title>Hospital Ward Parking</title>
+  <title>Doug's Simple Parking App</title>
   <style>
     :root {
       font-family: Arial, Helvetica, sans-serif;
@@ -106,8 +106,8 @@
     }
 
     .buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-wrap: wrap;
       gap: 9px;
     }
 
@@ -119,13 +119,21 @@
       border-radius: 8px;
       text-decoration: none;
       font-weight: 700;
-      padding: 10px;
+      padding: 10px 14px;
+      text-align: center;
+      flex: 1 1 145px;
     }
 
-    .map-button {
+    .parking-map-button {
       color: #0b4f6c;
       background: #e4f1f6;
       border: 1px solid #8db5c6;
+    }
+
+    .hospital-map-button {
+      color: #5a3a00;
+      background: #fff3cd;
+      border: 1px solid #d5b45b;
     }
 
     .navigate-button {
@@ -135,7 +143,7 @@
     }
 
     .unavailable {
-      padding: 10px 0 2px;
+      padding: 4px 0 10px;
       color: #8a3c1f;
       font-weight: 700;
       font-size: 0.9rem;
@@ -148,17 +156,11 @@
       text-align: center;
       color: #53616b;
     }
-
-    @media (max-width: 420px) {
-      .buttons {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Hospital Ward Parking</h1>
+    <h1>Doug's Simple Parking App</h1>
     <p>Find a ward, view the recommended entrance and start navigation.</p>
   </header>
 
@@ -172,11 +174,11 @@
       </div>
 
       <div>
-        <label for="searchInput">Ward or department</label>
+        <label for="searchInput">Ward or Department</label>
         <input
           id="searchInput"
           type="search"
-          placeholder="Start typing, e.g. renal or x-ray"
+          placeholder="Start typing. e.g. renal or x-ray or ward number"
           autocomplete="off"
         >
       </div>
@@ -203,14 +205,37 @@
         .replaceAll("'", "&#039;");
     }
 
-    function mapUrl(location) {
-      const query = `${location.latitude},${location.longitude}`;
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    function formatNotes(value) {
+      return escapeHtml(value).replaceAll("|", "<br>");
     }
 
-    function navigateUrl(location) {
+    function parkingMapUrl(location) {
+      if (location.link && location.link !== "TBC") return location.link;
+      if (Number.isFinite(location.latitude) && Number.isFinite(location.longitude)) {
+        const query = `${location.latitude},${location.longitude}`;
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+      }
+      return "";
+    }
+
+    function navigationUrl(location) {
+      if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
+        return "";
+      }
       const destination = `${location.latitude},${location.longitude}`;
       return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    }
+
+    function hospitalMapButtons(hospital) {
+      const maps = hospitalMaps[hospital] || [];
+      return maps.map(map => `
+        <a
+          class="button hospital-map-button"
+          href="${escapeHtml(map.file)}"
+          target="_blank"
+          rel="noopener"
+        >${escapeHtml(map.name)}</a>
+      `).join("");
     }
 
     function populateHospitals() {
@@ -240,8 +265,10 @@
             item.ward,
             item.floor,
             item.notes,
-            location?.name
+            location?.name,
+            location?.driverNotes
           ].join(" ").toLowerCase();
+
           return searchable.includes(search);
         })
         .sort((a, b) =>
@@ -264,10 +291,11 @@
           ? `<div><strong>Floor:</strong> ${escapeHtml(item.floor)}</div>`
           : "";
         const notes = item.notes
-          ? `<div><strong>Notes:</strong> ${escapeHtml(item.notes)}</div>`
+          ? `<div><strong>Notes:</strong> ${formatNotes(item.notes)}</div>`
           : "";
+        const mapButtons = hospitalMapButtons(item.hospital);
 
-        if (!location) {
+        if (!location || location.name === "TBC") {
           return `
             <article class="card">
               <div class="hospital">${escapeHtml(item.hospital)}</div>
@@ -277,9 +305,21 @@
                 ${notes}
               </div>
               <div class="unavailable">Parking location not yet available</div>
+              <div class="buttons">${mapButtons}</div>
             </article>
           `;
         }
+
+        const mapUrl = parkingMapUrl(location);
+        const navigateUrl = navigationUrl(location);
+
+        const parkingButton = mapUrl
+          ? `<a class="button parking-map-button" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">Parking Map</a>`
+          : "";
+
+        const navigationButton = navigateUrl
+          ? `<a class="button navigate-button" href="${escapeHtml(navigateUrl)}" target="_blank" rel="noopener">Navigate</a>`
+          : "";
 
         return `
           <article class="card">
@@ -288,21 +328,15 @@
             <div class="details">
               ${floor}
               <div><strong>Use:</strong> ${escapeHtml(location.name)}</div>
+              ${location.driverNotes
+                ? `<div><strong>Driver notes:</strong> ${formatNotes(location.driverNotes)}</div>`
+                : ""}
               ${notes}
             </div>
             <div class="buttons">
-              <a
-                class="button map-button"
-                href="${mapUrl(location)}"
-                target="_blank"
-                rel="noopener"
-              >Map</a>
-              <a
-                class="button navigate-button"
-                href="${navigateUrl(location)}"
-                target="_blank"
-                rel="noopener"
-              >Navigate</a>
+              ${parkingButton}
+              ${navigationButton}
+              ${mapButtons}
             </div>
           </article>
         `;
