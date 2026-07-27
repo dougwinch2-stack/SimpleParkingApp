@@ -259,14 +259,11 @@
         .filter(item => !selectedHospital || item.hospital === selectedHospital)
         .filter(item => {
           if (!search) return true;
-          const location = locationsData[item.locationId];
+
           const searchable = [
-            item.hospital,
             item.ward,
             item.floor,
-            item.notes,
-            location?.name,
-            location?.driverNotes
+            item.notes
           ].join(" ").toLowerCase();
 
           return searchable.includes(search);
