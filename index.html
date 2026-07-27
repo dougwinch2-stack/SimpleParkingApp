@@ -197,16 +197,16 @@
     const summaryElement = document.getElementById("summary");
 
     function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     function formatNotes(value) {
-      return escapeHtml(value).replaceAll("|", "<br>");
+      return escapeHtml(value).replace(/\|/g, "<br>");
     }
 
     function parkingMapUrl(location) {
@@ -227,7 +227,10 @@
     }
 
     function hospitalMapButtons(hospital) {
-      const maps = hospitalMaps[hospital] || [];
+      const maps =
+        typeof hospitalMaps !== "undefined" && hospitalMaps[hospital]
+          ? hospitalMaps[hospital]
+          : [];
       return maps.map(map => `
         <a
           class="button hospital-map-button"
@@ -340,10 +343,28 @@
       }).join("");
     }
 
-    populateHospitals();
-    hospitalFilter.addEventListener("change", renderResults);
-    searchInput.addEventListener("input", renderResults);
-    renderResults();
+    function startApp() {
+      if (typeof wardsData === "undefined" || !Array.isArray(wardsData)) {
+        summaryElement.textContent = "Ward data failed to load";
+        resultsElement.innerHTML =
+          '<div class="empty"><strong>wards.js could not be loaded.</strong><br>Check that wards.js is in the same folder as index.html and that the filename uses exactly the same capital letters.</div>';
+        return;
+      }
+
+      if (typeof locationsData === "undefined") {
+        summaryElement.textContent = "Parking data failed to load";
+        resultsElement.innerHTML =
+          '<div class="empty"><strong>locations.js could not be loaded.</strong><br>Check that locations.js is in the same folder as index.html and that the filename uses exactly the same capital letters.</div>';
+        return;
+      }
+
+      populateHospitals();
+      hospitalFilter.addEventListener("change", renderResults);
+      searchInput.addEventListener("input", renderResults);
+      renderResults();
+    }
+
+    startApp();
   </script>
 </body>
 </html>
