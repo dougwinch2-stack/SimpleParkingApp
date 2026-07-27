@@ -1,4 +1,4 @@
-// Generated directly from Hospital Wards_10.xlsx
+// Generated directly from Hospital Wards_11.xlsx
 // Ward and department data.
 const wardsData = [
   {
@@ -1288,5 +1288,12 @@ const wardsData = [
     "floor": "6",
     "locationId": "20",
     "notes": "Floor 6, Tower Block|Call 0300 443 0546|Visiting times are between 11am and 8..."
+  },
+  {
+    "hospital": "Southend",
+    "ward": "Renal Unit",
+    "floor": "Ground",
+    "locationId": "16",
+    "notes": ""
   }
 ];
