@@ -136,6 +136,13 @@
       border: 1px solid #d5b45b;
     }
 
+    .no-hospital-map-button {
+      color: #66737c;
+      background: #edf1f3;
+      border: 1px solid #c4cdd3;
+      cursor: default;
+    }
+
     .navigate-button {
       color: white;
       background: #0b6e4f;
@@ -178,7 +185,7 @@
         <input
           id="searchInput"
           type="search"
-          placeholder="Start typing. e.g. renal or x-ray or ward number"
+          placeholder="Search ward, department or clinic..."
           autocomplete="off"
         >
       </div>
@@ -231,13 +238,18 @@
         typeof hospitalMaps !== "undefined" && hospitalMaps[hospital]
           ? hospitalMaps[hospital]
           : [];
+
+      if (maps.length === 0) {
+        return '<span class="button no-hospital-map-button" aria-disabled="true">No Hospital Diagram</span>';
+      }
+
       return maps.map(map => `
         <a
           class="button hospital-map-button"
           href="${escapeHtml(map.file)}"
           target="_blank"
           rel="noopener"
-        >${escapeHtml(map.name)}</a>
+        >Hospital Diagram</a>
       `).join("");
     }
 
@@ -314,7 +326,7 @@
         const navigateUrl = navigationUrl(location);
 
         const parkingButton = mapUrl
-          ? `<a class="button parking-map-button" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">Parking Map</a>`
+          ? `<a class="button parking-map-button" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">Map</a>`
           : "";
 
         const navigationButton = navigateUrl
