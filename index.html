@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b4f6c">
+  <title>Hospital Ward Parking</title>
+  <style>
+    :root {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #17212b;
+      background: #eef3f6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #0b4f6c;
+      color: white;
+      padding: 18px 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.45rem;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    main {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    select,
+    input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid #aebbc4;
+      border-radius: 8px;
+      background: white;
+      padding: 10px 12px;
+      font-size: 1rem;
+    }
+
+    .summary {
+      margin: 6px 0 12px;
+      font-size: 0.9rem;
+      color: #4d5b66;
+    }
+
+    .results {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(20, 40, 55, 0.10);
+      border-left: 5px solid #0b4f6c;
+    }
+
+    .hospital {
+      color: #0b4f6c;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .ward {
+      margin: 4px 0 8px;
+      font-size: 1.12rem;
+      font-weight: 700;
+    }
+
+    .details {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 12px;
+      color: #33434e;
+      font-size: 0.95rem;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 10px;
+    }
+
+    .map-button {
+      color: #0b4f6c;
+      background: #e4f1f6;
+      border: 1px solid #8db5c6;
+    }
+
+    .navigate-button {
+      color: white;
+      background: #0b6e4f;
+      border: 1px solid #0b6e4f;
+    }
+
+    .unavailable {
+      padding: 10px 0 2px;
+      color: #8a3c1f;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .empty {
+      background: white;
+      border-radius: 10px;
+      padding: 22px;
+      text-align: center;
+      color: #53616b;
+    }
+
+    @media (max-width: 420px) {
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Hospital Ward Parking</h1>
+    <p>Find a ward, view the recommended entrance and start navigation.</p>
+  </header>
+
+  <main>
+    <section class="controls" aria-label="Ward filters">
+      <div>
+        <label for="hospitalFilter">Hospital</label>
+        <select id="hospitalFilter">
+          <option value="">All hospitals</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="searchInput">Ward or department</label>
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Start typing, e.g. renal or x-ray"
+          autocomplete="off"
+        >
+      </div>
+    </section>
+
+    <div id="summary" class="summary"></div>
+    <section id="results" class="results" aria-live="polite"></section>
+  </main>
+
+  <script src="locations.js"></script>
+  <script src="wards.js"></script>
+  <script>
+    const hospitalFilter = document.getElementById("hospitalFilter");
+    const searchInput = document.getElementById("searchInput");
+    const resultsElement = document.getElementById("results");
+    const summaryElement = document.getElementById("summary");
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function mapUrl(location) {
+      const query = `${location.latitude},${location.longitude}`;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+
+    function navigateUrl(location) {
+      const destination = `${location.latitude},${location.longitude}`;
+      return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    }
+
+    function populateHospitals() {
+      const hospitals = [...new Set(
+        wardsData.map(item => item.hospital).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      hospitals.forEach(hospital => {
+        const option = document.createElement("option");
+        option.value = hospital;
+        option.textContent = hospital;
+        hospitalFilter.appendChild(option);
+      });
+    }
+
+    function renderResults() {
+      const selectedHospital = hospitalFilter.value;
+      const search = searchInput.value.trim().toLowerCase();
+
+      const matches = wardsData
+        .filter(item => !selectedHospital || item.hospital === selectedHospital)
+        .filter(item => {
+          if (!search) return true;
+          const location = locationsData[item.locationId];
+          const searchable = [
+            item.hospital,
+            item.ward,
+            item.floor,
+            item.notes,
+            location?.name
+          ].join(" ").toLowerCase();
+          return searchable.includes(search);
+        })
+        .sort((a, b) =>
+          a.hospital.localeCompare(b.hospital) ||
+          a.ward.localeCompare(b.ward)
+        );
+
+      summaryElement.textContent =
+        `${matches.length} ${matches.length === 1 ? "result" : "results"}`;
+
+      if (matches.length === 0) {
+        resultsElement.innerHTML =
+          '<div class="empty">No wards match your search.</div>';
+        return;
+      }
+
+      resultsElement.innerHTML = matches.map(item => {
+        const location = locationsData[item.locationId];
+        const floor = item.floor
+          ? `<div><strong>Floor:</strong> ${escapeHtml(item.floor)}</div>`
+          : "";
+        const notes = item.notes
+          ? `<div><strong>Notes:</strong> ${escapeHtml(item.notes)}</div>`
+          : "";
+
+        if (!location) {
+          return `
+            <article class="card">
+              <div class="hospital">${escapeHtml(item.hospital)}</div>
+              <div class="ward">${escapeHtml(item.ward)}</div>
+              <div class="details">
+                ${floor}
+                ${notes}
+              </div>
+              <div class="unavailable">Parking location not yet available</div>
+            </article>
+          `;
+        }
+
+        return `
+          <article class="card">
+            <div class="hospital">${escapeHtml(item.hospital)}</div>
+            <div class="ward">${escapeHtml(item.ward)}</div>
+            <div class="details">
+              ${floor}
+              <div><strong>Use:</strong> ${escapeHtml(location.name)}</div>
+              ${notes}
+            </div>
+            <div class="buttons">
+              <a
+                class="button map-button"
+                href="${mapUrl(location)}"
+                target="_blank"
+                rel="noopener"
+              >Map</a>
+              <a
+                class="button navigate-button"
+                href="${navigateUrl(location)}"
+                target="_blank"
+                rel="noopener"
+              >Navigate</a>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    populateHospitals();
+    hospitalFilter.addEventListener("change", renderResults);
+    searchInput.addEventListener("input", renderResults);
+    renderResults();
+  </script>
+</body>
+</html>
