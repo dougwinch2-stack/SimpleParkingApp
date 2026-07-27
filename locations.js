@@ -1,21 +1,21 @@
-// Generated directly from Hospital Wards_12_checked.xlsx
+// Generated directly from Hospital Wards(2).xlsx
 // Hospital maps and parking-location data.
 const hospitalMaps = {
   "Basildon": [
     {
-      "name": "Hospital Map",
+      "name": "Hospital Diagram",
       "file": "map-basildon.jpg"
     }
   ],
   "Broomfield": [
     {
-      "name": "Hospital Map",
+      "name": "Hospital Diagram",
       "file": "map-broomfield.jpg"
     }
   ],
   "Southend": [
     {
-      "name": "Hospital Map",
+      "name": "Hospital Diagram",
       "file": "map-southend.jpg"
     },
     {

@@ -1,4 +1,4 @@
-// Generated directly from Hospital Wards_12_checked.xlsx
+// Generated from Hospital Wards.xlsx
 // Edit the spreadsheet and regenerate this file when wards change.
 const wardsData = [
   {
@@ -1245,7 +1245,7 @@ const wardsData = [
     "ward": "Carlingford Centre",
     "floor": "TBC",
     "locationId": "16",
-    "notes": "TBC - We need to confirm the following: Carlingford Centre at the rear of the..."
+    "notes": "Carlingford Centre is at the rear of the hospital and includes Chemotherapy, Renal, Rheumatology"
   },
   {
     "hospital": "Southend",
