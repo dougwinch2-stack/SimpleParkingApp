@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b4f6c">
-  <title>Doug's Simple Parking App</title>
+  <title>Doug's Simple Parking App 2.0</title>
   <style>
     :root {
       font-family: Arial, Helvetica, sans-serif;
@@ -197,9 +197,9 @@
 
   <script>
     const DATA_FILES = {
-      wards: ["dataWards.csv", "data-wards.csv"],
-      parking: ["dataParkingLocations.csv", "data-parkingLocations.csv"],
-      diagrams: ["dataHospitalDiagrams.csv", "data-hospitalDiagrams.csv"]
+      wards: "dataWards.csv",
+      parking: "dataParkingLocations.csv",
+      diagrams: "dataHospitalDiagrams.csv"
     };
 
     const hospitalFilter = document.getElementById("hospitalFilter");
@@ -306,29 +306,19 @@
         });
     }
 
-    async function fetchFirstAvailable(filenames) {
-      let lastError = null;
+    async function fetchCsv(filename) {
+      const response = await fetch(filename, { cache: "no-store" });
 
-      for (const filename of filenames) {
-        try {
-          const response = await fetch(filename, { cache: "no-store" });
-
-          if (!response.ok) {
-            throw new Error(`${response.status} ${response.statusText}`);
-          }
-
-          return {
-            filename,
-            records: parseCsv(await response.text())
-          };
-        } catch (error) {
-          lastError = error;
-        }
+      if (!response.ok) {
+        throw new Error(
+          `Could not load ${filename}: ${response.status} ${response.statusText}`
+        );
       }
 
-      throw new Error(
-        `Could not load ${filenames.join(" or ")}${lastError ? `: ${lastError.message}` : ""}`
-      );
+      return {
+        filename,
+        records: parseCsv(await response.text())
+      };
     }
 
     function requireHeaders(records, requiredHeaders, filename) {
@@ -556,9 +546,9 @@
 
       try {
         const [wardsResult, parkingResult, diagramsResult] = await Promise.all([
-          fetchFirstAvailable(DATA_FILES.wards),
-          fetchFirstAvailable(DATA_FILES.parking),
-          fetchFirstAvailable(DATA_FILES.diagrams)
+          fetchCsv(DATA_FILES.wards),
+          fetchCsv(DATA_FILES.parking),
+          fetchCsv(DATA_FILES.diagrams)
         ]);
 
         requireHeaders(
