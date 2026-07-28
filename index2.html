@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b4f6c">
+  <title>Doug's Simple Parking App</title>
+  <style>
+    :root {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #17212b;
+      background: #eef3f6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #0b4f6c;
+      color: white;
+      padding: 18px 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.45rem;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    main {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    select,
+    input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid #aebbc4;
+      border-radius: 8px;
+      background: white;
+      padding: 10px 12px;
+      font-size: 1rem;
+    }
+
+    .summary {
+      margin: 6px 0 12px;
+      font-size: 0.9rem;
+      color: #4d5b66;
+    }
+
+    .results {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(20, 40, 55, 0.10);
+      border-left: 5px solid #0b4f6c;
+    }
+
+    .hospital {
+      color: #0b4f6c;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .ward {
+      margin: 4px 0 8px;
+      font-size: 1.12rem;
+      font-weight: 700;
+    }
+
+    .details {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 12px;
+      color: #33434e;
+      font-size: 0.95rem;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 10px 14px;
+      text-align: center;
+      flex: 1 1 145px;
+    }
+
+    .parking-map-button {
+      color: #0b4f6c;
+      background: #e4f1f6;
+      border: 1px solid #8db5c6;
+    }
+
+    .hospital-map-button {
+      color: #5a3a00;
+      background: #fff3cd;
+      border: 1px solid #d5b45b;
+    }
+
+    .no-hospital-map-button {
+      color: #66737c;
+      background: #edf1f3;
+      border: 1px solid #c4cdd3;
+      cursor: default;
+    }
+
+    .navigate-button {
+      color: white;
+      background: #0b6e4f;
+      border: 1px solid #0b6e4f;
+    }
+
+    .unavailable {
+      padding: 4px 0 10px;
+      color: #8a3c1f;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .empty {
+      background: white;
+      border-radius: 10px;
+      padding: 22px;
+      text-align: center;
+      color: #53616b;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Doug's Simple Parking App</h1>
+    <p>Find a ward, view the recommended entrance and start navigation.</p>
+  </header>
+
+  <main>
+    <section class="controls" aria-label="Ward filters">
+      <div>
+        <label for="hospitalFilter">Hospital</label>
+        <select id="hospitalFilter">
+          <option value="">All hospitals</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="searchInput">Ward or Department</label>
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search ward, department or clinic..."
+          autocomplete="off"
+        >
+      </div>
+    </section>
+
+    <div id="summary" class="summary"></div>
+    <section id="results" class="results" aria-live="polite"></section>
+  </main>
+
+  <script src="locations.js"></script>
+  <script src="wards.js"></script>
+  <script>
+    const hospitalFilter = document.getElementById("hospitalFilter");
+    const searchInput = document.getElementById("searchInput");
+    const resultsElement = document.getElementById("results");
+    const summaryElement = document.getElementById("summary");
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatNotes(value) {
+      return escapeHtml(value).replace(/\|/g, "<br>");
+    }
+
+    function parkingMapUrl(location) {
+      if (location.link && location.link !== "TBC") return location.link;
+      if (Number.isFinite(location.latitude) && Number.isFinite(location.longitude)) {
+        const query = `${location.latitude},${location.longitude}`;
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+      }
+      return "";
+    }
+
+    function navigationUrl(location) {
+      if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
+        return "";
+      }
+      const destination = `${location.latitude},${location.longitude}`;
+      return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    }
+
+    function hospitalMapButtons(hospital) {
+      const maps =
+        typeof hospitalMaps !== "undefined" && hospitalMaps[hospital]
+          ? hospitalMaps[hospital]
+          : [];
+
+      if (maps.length === 0) {
+        return '<span class="button no-hospital-map-button" aria-disabled="true">No Hospital Diagram</span>';
+      }
+
+      return maps.map(map => `
+        <a
+          class="button hospital-map-button"
+          href="${escapeHtml(map.file)}"
+          target="_blank"
+          rel="noopener"
+        >${escapeHtml(map.name)}</a>
+      `).join("");
+    }
+
+    function populateHospitals() {
+      const hospitals = [...new Set(
+        wardsData.map(item => item.hospital).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      hospitals.forEach(hospital => {
+        const option = document.createElement("option");
+        option.value = hospital;
+        option.textContent = hospital;
+        hospitalFilter.appendChild(option);
+      });
+    }
+
+    function renderResults() {
+      const selectedHospital = hospitalFilter.value;
+      const search = searchInput.value.trim().toLowerCase();
+
+      const matches = wardsData
+        .filter(item => !selectedHospital || item.hospital === selectedHospital)
+        .filter(item => {
+          if (!search) return true;
+
+          const searchable = [
+            item.ward,
+            item.floor,
+            item.notes
+          ].join(" ").toLowerCase();
+
+          return searchable.includes(search);
+        })
+        .sort((a, b) =>
+          a.hospital.localeCompare(b.hospital) ||
+          a.ward.localeCompare(b.ward)
+        );
+
+      summaryElement.textContent =
+        `${matches.length} ${matches.length === 1 ? "result" : "results"}`;
+
+      if (matches.length === 0) {
+        resultsElement.innerHTML =
+          '<div class="empty">No wards match your search.</div>';
+        return;
+      }
+
+      resultsElement.innerHTML = matches.map(item => {
+        const location = locationsData[item.locationId];
+        const floor = item.floor
+          ? `<div><strong>Floor:</strong> ${escapeHtml(item.floor)}</div>`
+          : "";
+        const notes = item.notes
+          ? `<div><strong>Notes:</strong> ${formatNotes(item.notes)}</div>`
+          : "";
+        const mapButtons = hospitalMapButtons(item.hospital);
+
+        if (!location || location.name === "TBC") {
+          return `
+            <article class="card">
+              <div class="hospital">${escapeHtml(item.hospital)}</div>
+              <div class="ward">${escapeHtml(item.ward)}</div>
+              <div class="details">
+                ${floor}
+                ${notes}
+              </div>
+              <div class="unavailable">Parking location not yet available</div>
+              <div class="buttons">${mapButtons}</div>
+            </article>
+          `;
+        }
+
+        const mapUrl = parkingMapUrl(location);
+        const navigateUrl = navigationUrl(location);
+
+        const parkingButton = mapUrl
+          ? `<a class="button parking-map-button" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">Map</a>`
+          : "";
+
+        const navigationButton = navigateUrl
+          ? `<a class="button navigate-button" href="${escapeHtml(navigateUrl)}" target="_blank" rel="noopener">Navigate</a>`
+          : "";
+
+        return `
+          <article class="card">
+            <div class="hospital">${escapeHtml(item.hospital)}</div>
+            <div class="ward">${escapeHtml(item.ward)}</div>
+            <div class="details">
+              ${floor}
+              <div><strong>Park at:</strong> ${escapeHtml(location.name)}</div>
+              ${location.driverNotes
+                ? `<div><strong>Driver notes:</strong> ${formatNotes(location.driverNotes)}</div>`
+                : ""}
+              ${notes}
+            </div>
+            <div class="buttons">
+              ${parkingButton}
+              ${navigationButton}
+              ${mapButtons}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function startApp() {
+      if (typeof wardsData === "undefined" || !Array.isArray(wardsData)) {
+        summaryElement.textContent = "Ward data failed to load";
+        resultsElement.innerHTML =
+          '<div class="empty"><strong>wards.js could not be loaded.</strong><br>Check that wards.js is in the same folder as index.html and that the filename uses exactly the same capital letters.</div>';
+        return;
+      }
+
+      if (typeof locationsData === "undefined") {
+        summaryElement.textContent = "Parking data failed to load";
+        resultsElement.innerHTML =
+          '<div class="empty"><strong>locations.js could not be loaded.</strong><br>Check that locations.js is in the same folder as index.html and that the filename uses exactly the same capital letters.</div>';
+        return;
+      }
+
+      populateHospitals();
+      hospitalFilter.addEventListener("change", renderResults);
+      searchInput.addEventListener("input", renderResults);
+      renderResults();
+    }
+
+    startApp();
+  </script>
+</body>
+</html>
