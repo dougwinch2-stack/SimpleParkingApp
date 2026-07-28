@@ -195,13 +195,21 @@
     <section id="results" class="results" aria-live="polite"></section>
   </main>
 
-  <script src="locations.js"></script>
-  <script src="wards.js"></script>
   <script>
+    const DATA_FILES = {
+      wards: ["dataWards.csv", "data-wards.csv"],
+      parking: ["dataParkingLocations.csv", "data-parkingLocations.csv"],
+      diagrams: ["dataHospitalDiagrams.csv", "data-hospitalDiagrams.csv"]
+    };
+
     const hospitalFilter = document.getElementById("hospitalFilter");
     const searchInput = document.getElementById("searchInput");
     const resultsElement = document.getElementById("results");
     const summaryElement = document.getElementById("summary");
+
+    let wardsData = [];
+    let parkingLookup = new Map();
+    let diagramsLookup = new Map();
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -216,44 +224,179 @@
       return escapeHtml(value).replace(/\|/g, "<br>");
     }
 
-    function parkingMapUrl(location) {
-      if (location.link && location.link !== "TBC") return location.link;
-      if (Number.isFinite(location.latitude) && Number.isFinite(location.longitude)) {
-        const query = `${location.latitude},${location.longitude}`;
-        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-      }
-      return "";
+    function normalise(value) {
+      return String(value == null ? "" : value).trim();
     }
 
-    function navigationUrl(location) {
-      if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
-        return "";
+    function lookupKey(hospital, parkingLocation) {
+      return `${normalise(hospital)}\u0000${normalise(parkingLocation)}`;
+    }
+
+    /*
+      Small CSV parser supporting:
+      - quoted fields
+      - commas inside quoted fields
+      - doubled quotation marks
+      - Windows and Unix line endings
+    */
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+
+      text = text.replace(/^\uFEFF/, "");
+
+      for (let i = 0; i < text.length; i += 1) {
+        const character = text[i];
+
+        if (inQuotes) {
+          if (character === '"') {
+            if (text[i + 1] === '"') {
+              field += '"';
+              i += 1;
+            } else {
+              inQuotes = false;
+            }
+          } else {
+            field += character;
+          }
+          continue;
+        }
+
+        if (character === '"') {
+          inQuotes = true;
+        } else if (character === ",") {
+          row.push(field);
+          field = "";
+        } else if (character === "\n") {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+        } else if (character !== "\r") {
+          field += character;
+        }
       }
-      const destination = `${location.latitude},${location.longitude}`;
+
+      if (field !== "" || row.length > 0) {
+        row.push(field);
+        rows.push(row);
+      }
+
+      while (
+        rows.length > 0 &&
+        rows[rows.length - 1].every(value => value.trim() === "")
+      ) {
+        rows.pop();
+      }
+
+      if (rows.length === 0) return [];
+
+      const headers = rows[0].map(header => header.trim());
+
+      return rows.slice(1)
+        .filter(values => values.some(value => value.trim() !== ""))
+        .map(values => {
+          const record = {};
+          headers.forEach((header, index) => {
+            record[header] = values[index] == null ? "" : values[index].trim();
+          });
+          return record;
+        });
+    }
+
+    async function fetchFirstAvailable(filenames) {
+      let lastError = null;
+
+      for (const filename of filenames) {
+        try {
+          const response = await fetch(filename, { cache: "no-store" });
+
+          if (!response.ok) {
+            throw new Error(`${response.status} ${response.statusText}`);
+          }
+
+          return {
+            filename,
+            records: parseCsv(await response.text())
+          };
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw new Error(
+        `Could not load ${filenames.join(" or ")}${lastError ? `: ${lastError.message}` : ""}`
+      );
+    }
+
+    function requireHeaders(records, requiredHeaders, filename) {
+      if (records.length === 0) {
+        throw new Error(`${filename} contains no data rows.`);
+      }
+
+      const availableHeaders = Object.keys(records[0]);
+      const missing = requiredHeaders.filter(
+        header => !availableHeaders.includes(header)
+      );
+
+      if (missing.length > 0) {
+        throw new Error(
+          `${filename} is missing ${missing.join(", ")}.`
+        );
+      }
+    }
+
+    function parseCoordinates(value) {
+      const parts = normalise(value).split(",").map(part => part.trim());
+
+      if (parts.length !== 2) return null;
+
+      const latitude = Number(parts[0]);
+      const longitude = Number(parts[1]);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+      }
+
+      return { latitude, longitude };
+    }
+
+    function mapUrl(coordinates) {
+      if (!coordinates) return "";
+
+      const query = `${coordinates.latitude},${coordinates.longitude}`;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+
+    function navigationUrl(coordinates) {
+      if (!coordinates) return "";
+
+      const destination = `${coordinates.latitude},${coordinates.longitude}`;
       return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
     }
 
-    function hospitalMapButtons(hospital) {
-      const maps =
-        typeof hospitalMaps !== "undefined" && hospitalMaps[hospital]
-          ? hospitalMaps[hospital]
-          : [];
+    function hospitalDiagramButtons(hospital) {
+      const diagrams = diagramsLookup.get(hospital) || [];
 
-      if (maps.length === 0) {
+      if (diagrams.length === 0) {
         return '<span class="button no-hospital-map-button" aria-disabled="true">No Hospital Diagram</span>';
       }
 
-      return maps.map(map => `
+      return diagrams.map(diagram => `
         <a
           class="button hospital-map-button"
-          href="${escapeHtml(map.file)}"
+          href="${escapeHtml(diagram.file)}"
           target="_blank"
           rel="noopener"
-        >${escapeHtml(map.name)}</a>
+        >${escapeHtml(diagram.name)}</a>
       `).join("");
     }
 
     function populateHospitals() {
+      hospitalFilter.innerHTML = '<option value="">All hospitals</option>';
+
       const hospitals = [...new Set(
         wardsData.map(item => item.hospital).filter(Boolean)
       )].sort((a, b) => a.localeCompare(b));
@@ -298,40 +441,60 @@
       }
 
       resultsElement.innerHTML = matches.map(item => {
-        const location = locationsData[item.locationId];
+        const parkingLocationName = item.parkingLocation;
+        const location = parkingLookup.get(
+          lookupKey(item.hospital, parkingLocationName)
+        );
+
         const floor = item.floor
           ? `<div><strong>Floor:</strong> ${escapeHtml(item.floor)}</div>`
           : "";
+
         const notes = item.notes
           ? `<div><strong>Notes:</strong> ${formatNotes(item.notes)}</div>`
           : "";
-        const mapButtons = hospitalMapButtons(item.hospital);
 
-        if (!location || location.name === "TBC") {
+        const diagramButtons = hospitalDiagramButtons(item.hospital);
+
+        if (
+          !location ||
+          parkingLocationName.toUpperCase() === "TBC" ||
+          !location.coordinates
+        ) {
           return `
             <article class="card">
               <div class="hospital">${escapeHtml(item.hospital)}</div>
               <div class="ward">${escapeHtml(item.ward)}</div>
               <div class="details">
                 ${floor}
+                ${parkingLocationName && parkingLocationName.toUpperCase() !== "TBC"
+                  ? `<div><strong>Park at:</strong> ${escapeHtml(parkingLocationName)}</div>`
+                  : ""}
                 ${notes}
               </div>
               <div class="unavailable">Parking location not yet available</div>
-              <div class="buttons">${mapButtons}</div>
+              <div class="buttons">${diagramButtons}</div>
             </article>
           `;
         }
 
-        const mapUrl = parkingMapUrl(location);
-        const navigateUrl = navigationUrl(location);
+        const parkingButton = `
+          <a
+            class="button parking-map-button"
+            href="${escapeHtml(mapUrl(location.coordinates))}"
+            target="_blank"
+            rel="noopener"
+          >Map</a>
+        `;
 
-        const parkingButton = mapUrl
-          ? `<a class="button parking-map-button" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">Map</a>`
-          : "";
-
-        const navigationButton = navigateUrl
-          ? `<a class="button navigate-button" href="${escapeHtml(navigateUrl)}" target="_blank" rel="noopener">Navigate</a>`
-          : "";
+        const navigationButton = `
+          <a
+            class="button navigate-button"
+            href="${escapeHtml(navigationUrl(location.coordinates))}"
+            target="_blank"
+            rel="noopener"
+          >Navigate</a>
+        `;
 
         return `
           <article class="card">
@@ -339,7 +502,7 @@
             <div class="ward">${escapeHtml(item.ward)}</div>
             <div class="details">
               ${floor}
-              <div><strong>Park at:</strong> ${escapeHtml(location.name)}</div>
+              <div><strong>Park at:</strong> ${escapeHtml(parkingLocationName)}</div>
               ${location.driverNotes
                 ? `<div><strong>Driver notes:</strong> ${formatNotes(location.driverNotes)}</div>`
                 : ""}
@@ -348,32 +511,102 @@
             <div class="buttons">
               ${parkingButton}
               ${navigationButton}
-              ${mapButtons}
+              ${diagramButtons}
             </div>
           </article>
         `;
       }).join("");
     }
 
-    function startApp() {
-      if (typeof wardsData === "undefined" || !Array.isArray(wardsData)) {
-        summaryElement.textContent = "Ward data failed to load";
-        resultsElement.innerHTML =
-          '<div class="empty"><strong>wards.js could not be loaded.</strong><br>Check that wards.js is in the same folder as index.html and that the filename uses exactly the same capital letters.</div>';
-        return;
-      }
+    function buildLookups(parkingRecords, diagramRecords) {
+      parkingLookup = new Map();
+      diagramsLookup = new Map();
 
-      if (typeof locationsData === "undefined") {
-        summaryElement.textContent = "Parking data failed to load";
-        resultsElement.innerHTML =
-          '<div class="empty"><strong>locations.js could not be loaded.</strong><br>Check that locations.js is in the same folder as index.html and that the filename uses exactly the same capital letters.</div>';
-        return;
-      }
+      parkingRecords.forEach(record => {
+        const hospital = normalise(record.Hospital);
+        const parkingLocation = normalise(record.ParkingLocation);
 
-      populateHospitals();
-      hospitalFilter.addEventListener("change", renderResults);
-      searchInput.addEventListener("input", renderResults);
-      renderResults();
+        if (!hospital || !parkingLocation) return;
+
+        parkingLookup.set(lookupKey(hospital, parkingLocation), {
+          coordinates: parseCoordinates(record.Coordinates),
+          driverNotes: normalise(record.DriverNotes)
+        });
+      });
+
+      diagramRecords.forEach(record => {
+        const hospital = normalise(record.Hospital);
+        const name = normalise(record.DiagramName);
+        const file = normalise(record.File);
+
+        if (!hospital || !name || !file) return;
+
+        if (!diagramsLookup.has(hospital)) {
+          diagramsLookup.set(hospital, []);
+        }
+
+        diagramsLookup.get(hospital).push({ name, file });
+      });
+    }
+
+    async function startApp() {
+      summaryElement.textContent = "Loading data...";
+      resultsElement.innerHTML =
+        '<div class="empty">Loading ward and parking information...</div>';
+
+      try {
+        const [wardsResult, parkingResult, diagramsResult] = await Promise.all([
+          fetchFirstAvailable(DATA_FILES.wards),
+          fetchFirstAvailable(DATA_FILES.parking),
+          fetchFirstAvailable(DATA_FILES.diagrams)
+        ]);
+
+        requireHeaders(
+          wardsResult.records,
+          ["Hospital", "Ward", "Floor", "ParkingLocation", "Notes"],
+          wardsResult.filename
+        );
+
+        requireHeaders(
+          parkingResult.records,
+          ["Hospital", "ParkingLocation", "Coordinates", "DriverNotes"],
+          parkingResult.filename
+        );
+
+        requireHeaders(
+          diagramsResult.records,
+          ["Hospital", "DiagramName", "File"],
+          diagramsResult.filename
+        );
+
+        wardsData = wardsResult.records.map(record => ({
+          hospital: normalise(record.Hospital),
+          ward: normalise(record.Ward),
+          floor: normalise(record.Floor),
+          parkingLocation: normalise(record.ParkingLocation),
+          notes: normalise(record.Notes)
+        })).filter(item => item.hospital && item.ward);
+
+        buildLookups(parkingResult.records, diagramsResult.records);
+        populateHospitals();
+
+        hospitalFilter.addEventListener("change", renderResults);
+        searchInput.addEventListener("input", renderResults);
+
+        renderResults();
+      } catch (error) {
+        console.error(error);
+        summaryElement.textContent = "Data failed to load";
+        resultsElement.innerHTML = `
+          <div class="empty">
+            <strong>The CSV data files could not be loaded.</strong><br><br>
+            ${escapeHtml(error.message)}<br><br>
+            Check that index2.html and all three CSV files are in the same
+            GitHub folder, and that their filenames use exactly the same
+            capital letters.
+          </div>
+        `;
+      }
     }
 
     startApp();
