@@ -1,0 +1,27 @@
+﻿Hospital,ParkingLocation,Coordinates,DriverNotes
+Basildon,RENAL,"51.559212,0.452781",
+Basildon,OUTPATIENTS,"51.558180,0.450663",
+Basildon,JUBILEE ENTRANCE,"51.5569224,0.4519968",
+Basildon,CTC - FRONT,"51.557045,0.452337",
+Basildon,CTC - BACK,"51.556590,0.452468",
+Basildon,MENTAL HEALTH - FRONT,"51.557065,0.450527",
+Basildon,MENTAL HEALTH - BACK,"51.556741,0.451309",
+Basildon,A & E,"51.558601,0.451255",
+Basildon,NURSERY,"51.557697,0.455518",
+Basildon,DAY SURGERY,"51.557518,0.452253",
+Basildon,ENDOSCOPY,"51.558453,0.451058",
+St Luke's - Basildon,ST LUKE'S BASILDON,"51.561464,0.451921",
+St Luke's - Dunton,ST LUKE'S THURROCK (DUNTON),"51.547655,0.405826",
+Southend,CARLINGFORD ENTRANCE,"51.554627,0.690533",
+Southend,PET CT SCANNER,"51.554301,0.690223","**WARNING** PET CT Scanner has moved and is believed to be in a mobile unit in the main car park|Exact mobile scanner location is not confirmed|Use the car park entrance from Prittlewell Chase, not Carlingford Drive|Google may suggest a route blocked by a fence"
+Southend,CARDIGAN ENTRANCE,"51.554172,0.686205",
+Southend,PRITTLEWELL ENTRANCE,"51.553771,0.687720",OLD MAIN ENTRANCE
+Southend,TOWER BLOCK ENTRANCE,"51.553622,0.689443",
+Southend,RADIOTHERAPY,"51.5543812,0.686461",
+Southend,EYE UNIT,"51.554939,0.688601",
+Broomfield,Zone-A - Main Entrance & Outpatients,"51.773486,0.467352",Good for most wards / rooms in Zone-A - some are closer to Zone-E and these will show that
+Broomfield,Zone-B - Back Door,"51.774049,0.463927",Good for most wards / rooms in Zone-B and in Zone-C - some are closer to other entrances and these will show that
+Broomfield,Zone-C - Back Door,"51.774049,0.463927",Good for most wards / rooms in Zone-C and in Zone-B - some are closer to other entrances and these will show that
+Broomfield,Zone-D - East Entrance,"51.774632,0.467356",Not sure of best parking place for Zone-D so use Zone-E for now as it's not awful
+Broomfield,Zone-E - East Entrance,"51.774632,0.467356",Use for Zone-E and currently also for Zone-D where indicated
+Southend,HILLBOROUGH ENTRANCE,"51.554372, 0.688707",

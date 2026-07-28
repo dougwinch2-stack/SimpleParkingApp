@@ -1,0 +1,181 @@
+﻿Hospital,Ward,Floor,ParkingLocation,Notes
+Basildon,CTC - Cardiac Catheter Labs,B,CTC - BACK,
+Basildon,CTC - Cardiac Investigations,A,CTC - FRONT,
+Basildon,CTC - Cardiac Rehab,A,CTC - FRONT,
+Basildon,CTC - Chelmer Ward,D,CTC - BACK,
+Basildon,CTC - Colne Ward,C,CTC - BACK,
+Basildon,CTC - CT Scanner,A,CTC - FRONT,
+Basildon,CTC - High Dependancy Unit (HDU),C,CTC - BACK,
+Basildon,CTC - Intensive Therapy Unit (ITU),C,CTC - BACK,
+Basildon,CTC - Outpatients,A,CTC - FRONT,
+Basildon,CTC - Pulmonary Lab,A,CTC - FRONT,
+Basildon,CTC - Roding Ward,B,CTC - BACK,
+Basildon,CTC - Special Echo,B,CTC - FRONT,
+Basildon,CTC - Thames Ward Day Unit,B,CTC - BACK,
+Basildon,CTC - X-Ray,A,CTC - FRONT,
+Basildon,Accident & Emergency (A&E),C,A & E,
+Basildon,A&E Minors,C,A & E,
+Basildon,Bereavement Office,C,RENAL,
+Basildon,Birthing Centre,D,RENAL,
+Basildon,Blood Testing,C,OUTPATIENTS,
+Basildon,Breast Care Unit,C,OUTPATIENTS,
+Basildon,Bulphan Ward,A,JUBILEE ENTRANCE,
+Basildon,Cardiac Department,B,RENAL,
+Basildon,Cedar Ward,B,RENAL,
+Basildon,Cellular Pathology,C,OUTPATIENTS,
+Basildon,Childrens Hearing Centre,D,RENAL,
+Basildon,Child Development Centre,A,RENAL,
+Basildon,Children’s Outpatients,C,RENAL,
+Basildon,Colposcopy,C,RENAL,
+Basildon,Day Nursery,A,NURSERY,
+Basildon,Day Unit,A,DAY SURGERY,
+Basildon,Dermatology Unit,C,OUTPATIENTS,
+Basildon,Discharge Lounge,C,JUBILEE ENTRANCE,
+Basildon,Edith Clavell Ward,C,JUBILEE ENTRANCE,
+Basildon,Elizabeth Fry Ward,D,JUBILEE ENTRANCE,
+Basildon,Elsdon Ward,A,RENAL,Neonatal Intensive Care Unit
+Basildon,Endoscopy,C,ENDOSCOPY,
+Basildon,ENT,C,OUTPATIENTS,
+Basildon,Florence Nightingale Ward,B,JUBILEE ENTRANCE,
+Basildon,Gymnasium,C,OUTPATIENTS,
+Basildon,Gynaecology Outpatients,C,RENAL,
+Basildon,High Dependency Unit,A,ENDOSCOPY,Critical Care Unit on Diagram Level A
+Basildon,Intensive Therapy Unit (ITU),C,CTC - BACK,Based in CTC
+Basildon,Kingswood Ward,A,JUBILEE ENTRANCE,
+Basildon,Labour Ward,C,RENAL,
+Basildon,Linford Ward,A,JUBILEE ENTRANCE,
+Basildon,Lionel Cosin Ward,C,JUBILEE ENTRANCE,
+Basildon,Lister Ward,B,JUBILEE ENTRANCE,
+Basildon,Maternity Assessment Unit,D,RENAL,
+Basildon,Maternity Outpatients,C,RENAL,
+Basildon,Maxillo-Facial,C,OUTPATIENTS,
+Basildon,Medical Admissions Unit (MAU),C,RENAL,
+Basildon,Mike Jackman Nuclear Medicine,C,ENDOSCOPY,
+Basildon,Neo Natal ICU,A,RENAL,
+Basildon,Outpatients,C,OUTPATIENTS,
+Basildon,Oral Department,C,OUTPATIENTS,
+Basildon,Orsett Ward,C,JUBILEE ENTRANCE,
+Basildon,Osler Ward,C,JUBILEE ENTRANCE,
+Basildon,PALS,B,RENAL,
+Basildon,Pasteur Ward,B,JUBILEE ENTRANCE,
+Basildon,Pathology,C,OUTPATIENTS,
+Basildon,Penguin Ward,A,RENAL,
+Basildon,Physiotherapy,C,OUTPATIENTS,
+Basildon,Plaster Room,C,OUTPATIENTS,
+Basildon,Post Natal Ward,D,RENAL,
+Basildon,Pre-Op Assessment,C,OUTPATIENTS,
+Basildon,Puffin Ward,A,RENAL,
+Basildon,Renal Unit,C,RENAL,
+Basildon,Restaurant,C,RENAL,
+Basildon,Surgical Referrals Unit (SRU),B,RENAL,
+Basildon,Ultrasound,C,ENDOSCOPY,
+Basildon,Ultrasound (Maternity),D,RENAL,
+Basildon,Wagtail Ward,A,RENAL,
+Basildon,William Harvey Ward (Rheumatology Day Unit),D,RENAL,
+Basildon,Willow Ward,D,RENAL,
+Basildon,X-Ray,C,ENDOSCOPY,
+Basildon,Katherine Monk Ward,A,JUBILEE ENTRANCE,
+Basildon,Horndon Ward,A,JUBILEE ENTRANCE,
+Basildon,Kate Evelyn Luard Ward,A,JUBILEE ENTRANCE,
+Basildon,Short Stay Ward,A,JUBILEE ENTRANCE,
+Basildon,Laindon Ward,A,JUBILEE ENTRANCE,
+Basildon,Polly's Pad,A,RENAL,
+Basildon,Frederick Banting Ward,A,RENAL,
+Basildon,Burstead Ward,A,RENAL,
+Basildon,Critical Care Unit,A,RENAL,
+Basildon,Marjory Warren Ward,B,JUBILEE ENTRANCE,
+Basildon,Oxygen Clinic Pain Management,B,JUBILEE ENTRANCE,
+Basildon,CT/MRI Courtyard,B,JUBILEE ENTRANCE,
+Basildon,James Mackenzie Ward,B,JUBILEE ENTRANCE,
+Basildon,Mulberry Assessment Unit,D,RENAL,
+Basildon,Maternity Ultrasound,D,RENAL,
+Broomfield,Accident and Emergency (A&E),2,Zone-E - East Entrance,External Entrance - Level 2|Call 0300 443 0245|AccessAble information available
+Broomfield,Accident and Emergency (A&E) — paediatrics,2,Zone-E - East Entrance,External Entrance - Level 2|Call 0300 443 0066|AccessAble information available
+Broomfield,"Acute Medical Unit (AMU, A207)",2,Zone-A - Main Entrance & Outpatients,"Zone A - 2nd floor, room 07 Medical Assessment Call 0300 443 0472|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Antenatal ward (A404),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 04 Antenatal|Call 0300 443 2550|Visiting time are between 9am and 8.30pm|Antenatal emergency assessment unit — View accessibility information about this area on the AccessAble website at View accessibility information about this area on the AccessAble website at|Antenatal clinic — View accessibility information about this area on the AccessAble website at"
+Broomfield,Baddow ward (C250),2,Zone-C - Back Door,"Zone C, 2nd floor, room 50 Care of the Elderly|Call 0300 443 0403|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Bardfield ward (A350),3,Zone-C - Back Door,"Zone C, 3rd floor, room 50 Care of the Elderly|Call 0300 443 0474|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Billericay ward (E321),3,Zone-E - East Entrance,"Zone E, 3rd floor, room 21 ENT/Oral Max Fax|Call 0300 443 0406|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Braxted ward (C251),2,Zone-C - Back Door,"Zone C, 2nd floor, room 51|Care of the Elderly|Call 0300 443 0404|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Burns Adults ward (E221),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 21|Adult Burns|Call 0300 443 0475|Visiting times are between 2pm and 7pm|AccessAble information available"
+Broomfield,Burns Intensive Care Unit (ITU),2,Zone-E - East Entrance,AccessAble information available
+Broomfield,Children's Burns ward (E225),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 25|Paediatric Burns|Call 0300 443 0405|Visiting times are 10am and 8pm, however only the parent that is not staying overnight can visit anytime|AccessAble information available"
+Broomfield,Day Stay Admissions/Unit (B448),4,Zone-B - Back Door,"Zone B, 4th floor, room 48|Day Cases|Call 0300 443 6813|Visiting times are not available|AccessAble information available"
+Broomfield,Discharge Lounge (C451) Lister Ward,4,Zone-C - Back Door,"Zone C, 4th floor, room 51|Call 0300 443 0450|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,"Frailty Assessment Base (FAB, A203)",2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 03 and is based on Gosfield ward"
+Broomfield,Acute Frailty Unit,2,Zone-A - Main Entrance & Outpatients,Call 0300 443 0481|Visiting times — please speak to the senior sister|AccessAble information available|Ward — call 0300 443 0481|Frailty assessment bay — call 0300 443 0481|Visiting times are between 11am and 8pm
+Broomfield,Feering ward (E125),1,Zone-E - East Entrance,"Zone E, 1st Floor, room 25|Call 0300 443 0554|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Felsted ward (A205),2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 05|Renal and Cardiac|Call 0300 443 0477|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,"General High Dependency Unit (GHDU, A211)",2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 11|High Dependency|Call 0300 443 5373|Visiting times are between 2pm and 4pm / 5pm and 7pm|AccessAble information available"
+Broomfield,"General Intensive Care Unit (GICU, E226)",2,Zone-E - East Entrance,"Zone E, 2nd floor, room 26|Intensive Care|Call 0300 443 0356|Visiting times are between 2pm and 4pm / 5pm and 7pm|AccessAble information available"
+Broomfield,Gosfield Acute Frailty Unit (A203),2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 03"
+Broomfield,Heybridge ward (A303),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 03 Gastric Surgery and Oncology|Call 0300 443 0482|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,John Ray ward (E323),3,Zone-E - East Entrance,"Zone E, 3rd floor, room 23 Elective|Orthopaedic|Call 0300 443 0483|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Lister ward (C451) Discharge Lounge,4,Zone-C - Back Door,"Zone C, 4th floor, room 51|Call 0300 443 0450|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Labour ward (A402),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 02|Call 0300 443 4224|Visiting times are between 2pm and 7pm for two birthing partners throughout labour and two additional visitors|AccessAble information available"
+Broomfield,Maternity Triage (A404),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 04, Antenatal|Call 0300 443 7165|Visiting times are between 9am and 8.30pm|AccessAble information available"
+Broomfield,Mayflower ward (E322),3,Zone-E - East Entrance,"Zone E, 3rd floor, room 22"
+Broomfield,Surgical Ward,3,Zone-E - East Entrance,Call 0300 443 0485|Visiting times are between 11am and 8pm|AccessAble information available
+Broomfield,Neonatal Unit (A406),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor room 06|Neonatal Care|Call 0300 443 0534|Visiting times are 24/7|AccessAble information available"
+Broomfield,Notley ward (E223),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 23|Emergency Orthopaedic|Call 0300 443 0487|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,"Paediatric Assessment Unit (PAU, E222)",2,Zone-E - East Entrance,"Zone E, 1st floor, room 22|Assessment|Call 0300 443 0573|Visiting times — please speak with the senior sister"
+Broomfield,Phoenix ward (E122),1,Zone-E - East Entrance,"Zone E, 1st floor, room 22|Paediatric Care|Call 0300 443 0572|Visiting times are between 8am and 8pm|AccessAble information available"
+Broomfield,Pegasus ward (E122),1,Zone-E - East Entrance,"Zone E, 1st floor, room 22|Paediatric Care|Call 0300 443 1239|Visiting times are not available|AccessAble information available"
+Broomfield,Postnatal ward (A405),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 05|Postnatal Care|Call 0300 443 7632|Maternity Reception, call 01245 513927|Visiting times are between 6am and 12am|AccessAble information available"
+Broomfield,"Rayne ward and Early Pregnancy Unit (EPU, A304)",3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 04|Surgery, Urology, Gynaecology|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Main ward,3,Zone-A - Main Entrance & Outpatients,Call 0300 443 0242|Inpatients|AccessAble information available
+Broomfield,Early pregnancy unit (EPU),2,Zone-A - Main Entrance & Outpatients,"Call 0300 443 2600|AccessAble information available|Same Day Emergency Care (SDEC, A204)|Zone A, 2nd floor, room 4|Medical|Call 0300 443 7616|Visiting times are between 8am and 8pm weekdays and 10am and 6pm weekend"
+Broomfield,"Surgical and Assessment Unit (SATU, B344)",3,Zone-B - Back Door,"Zone B, 3rd floor, room 44"
+Broomfield,Surgical Emergencies — formerly known as the surgical emergency ward (SEW),3,Zone-B - Back Door,Call 0300 443 0564|Visiting times are between 11am and 8pm|AccessAble information available
+Broomfield,Surgical Same Day Emergency Unit,3,Zone-B - Back Door,"Zone B, 3rd floor, room 42|Call 01245 516962|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Stock ward (E320),3,Zone-E - East Entrance,"Zone E, 3rd floor - room 20"
+Broomfield,Plastic Surgery ward,3,Zone-E - East Entrance,Call 0300 443 0494|Visiting times are between 11am and 8pm|AccessAble information available
+Broomfield,Stroke Unit (A302),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 02|Acute stroke patients|Call 0300 443 7662 or 0300 443 3705|Visiting times are between 2pm and 4pm / 5pm and 7pm|AccessAble information available"
+Broomfield,Terling ward (A305),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 05|Respiratory|Call 0300 443 0496|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Tiptree ward (C351),3,Zone-C - Back Door,"Zone C, 3rd floor, room 51|General Medicine|Call 0300 443 0497|Visiting times are between 11am and 8pm|AccessAble information available"
+Broomfield,Tollesbury ward (E222),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 22"
+Broomfield,Gastro ward,2,Zone-E - East Entrance,Call 0300 443 0498|Visiting times are between 11am and 8pm|AccessAble information available
+Broomfield,Wizard ward (A301),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 01|Paediatric day case|Call 0300 443 4414|Visiting times — please speak with the senior sister|AccessAble information available"
+Broomfield,Writtle ward (C450),4,Zone-C - Back Door,"Zone C, 4th floor, room 50|Care of the elderly|Call 0300 443 0499|Visiting times are between 11am and 8pm|AccessAble information available"
+Southend,Emergency Department Ground floor,Ground,PRITTLEWELL ENTRANCE,Call 0300 443 9992|AccessAble information available
+Southend,Emergency Department (A&E),Ground,PRITTLEWELL ENTRANCE,Ground floor|Call 0300 443 9992|AccessAble information available
+Southend,Paediatric Emergency Department (A&E Paediatrics),Ground,PRITTLEWELL ENTRANCE,"Ground floor, Emergency Department|Call 0300 443 0347|AccessAble information ..."
+Southend,Estuary Ward,Ground,CARDIGAN ENTRANCE,"Ground floor|Call 0300 443 8745 reception, 0300 443 1184 or 0300 443 1298|Vis..."
+Southend,Bedwell Ward,Ground,CARDIGAN ENTRANCE,"Ground floor|Call 0300 443 8745 reception, 0300 443 1184 or 0300 443 1298|Vis..."
+Southend,Acute Medical Service / Edmund Stone Ward,2,PRITTLEWELL ENTRANCE,"Floor 2, Prittlewell Building|Call 0300 443 0562|Visiting times are between 1..."
+Southend,Dowsett Ward,Ground,PRITTLEWELL ENTRANCE,"Same Day Emergency Care|Ground floor, Prittlewell Building|Call 0300 443 0562..."
+Southend,Windsor Ward,6,TOWER BLOCK ENTRANCE,"Floor 6, Tower Block|Also hosts Active Home Suite|Discharge unit and winter e..."
+Southend,Active Home Suite - Windsor Ward,6,TOWER BLOCK ENTRANCE,"Floor 6, Tower Block|Located on Windsor Ward|Discharge unit and winter escala..."
+Southend,"Oncology, Haematology, Palliative Care",TBC,CARDIGAN ENTRANCE,Cardigan Building|Report to the appropriate building reception for directions...
+Southend,General Medical,TBC,TBC,"TBC - We need to confirm the following: Floor 3, Tower Block, Call 0300 443 0..."
+Southend,Cardiology,2,TOWER BLOCK ENTRANCE,"Floor 2, Tower Block|Call 0300 443 0145|Visiting times are between 11am and 8..."
+Southend,MSK and Elective,8,TOWER BLOCK ENTRANCE,"Floor 8, Tower Block|Call 0300 443 0509|Visiting times are between 11am and 8..."
+Southend,Maternity,TBC,CARDIGAN ENTRANCE,"TBC - We need to confirm the following: Cardigan Building, most likely Floor ..."
+Southend,Short Stay for Medicine of the Elderly (DME),1,CARDIGAN ENTRANCE,"Floor 1, Cardigan Building|Call 0300 443 0513|Visiting times are between 11.3..."
+Southend,Critical Care,TBC,PRITTLEWELL ENTRANCE,"TBC - We need to confirm the following: most likely Floor 1, Prittlewell Buil..."
+Southend,Day Surgery Unit,Ground,HILLBOROUGH ENTRANCE,"Surgical Specialties|Ground floor, Hillborough Building|Call 0300 443 1250|Vi..."
+Southend,Discharge Lounge,Ground,PRITTLEWELL ENTRANCE,"Ground floor, Prittlewell Building via Cherry Tree Wing|Call 0300 443 4357"
+Southend,Gynaecology,2,CARDIGAN ENTRANCE,"Floor 2, Cardigan Building|Call 0300 443 0041 or 0300 443 0518|Visiting times..."
+Southend,Gastro and Surgical,5,TOWER BLOCK ENTRANCE,"Floor 5, Tower Block|Call 0300 443 0519|Visiting times are between 11am and 8..."
+Southend,Elective Admissions Lounge (EAL),TBC,TBC,"TBC - We need to confirm the following: Floor 1, Tower Block, Call 0300 443 5..."
+Southend,Ophthalmology,TBC,EYE UNIT,TBC - Floor and entrance need confirming|Call 01702 435555 ext 6523 or ext 65...
+Southend,Department of Medicine for the Elderly (DME),1,CARDIGAN ENTRANCE,"Floor 1, Cardigan Building|Call 0300 443 0528|Visiting times are between 11am..."
+Southend,Post-Operative,1,HILLBOROUGH ENTRANCE,"Floor 1, Hillborough Building|Call 01702 435555 ext 6357 or ext 8205|Visiting..."
+Southend,High Dependency Unit (HDU),1,PRITTLEWELL ENTRANCE,"Floor 1, Prittlewell Building via Kitty Hubbard|Call 0300 443 0530|Visiting t..."
+Southend,Infusion Unit,2,PRITTLEWELL ENTRANCE,"Floor 2, Cherry Tree|Call 0300 443 6086|Visiting times are between 11am and 8..."
+Southend,Margaret Broom 1,2,CARDIGAN ENTRANCE,"Antenatal - Maternity|Floor 2, Cardigan Building|Call 0300 443 0041|Visiting ..."
+Southend,Postnatal - Maternity,2,CARDIGAN ENTRANCE,"Floor 2, Cardigan Building|Call 0300 443 0047|Visiting times are between 2pm ..."
+Southend,Neonatal Intensive Care - Maternity,2,CARDIGAN ENTRANCE,"Floor 2, Cardigan Building|Call 0300 443 2371|Visiting times are between 11am..."
+Southend,Neptune Ward,1,CARDIGAN ENTRANCE,"Paediatric|Floor 1, Cardigan Building|Call 0300 443 0535|Visiting times are b..."
+Southend,Paediatric Assessment Unit (PAU),TBC,CARDIGAN ENTRANCE,"TBC - We need to confirm the following: most likely Floor 1, Cardigan Buildin..."
+Southend,Elective,9,TOWER BLOCK ENTRANCE,"Floor 9, Tower Block|Call 0300 443 0539|Visiting times are between 11am and 8pm"
+Southend,Urology Enhanced Recovery,TBC,TBC,TBC - Floor and building need confirming|Call 0300 443 7640|AccessAble inform...
+Southend,Carlingford Centre,TBC,CARLINGFORD ENTRANCE,"Carlingford Centre is at the rear of the hospital and includes Chemotherapy, Renal, Rheumatology"
+Southend,Surgical Assessment Unit (SAU),TBC,TBC,"TBC - Floor, building, phone number and entrance need confirming"
+Southend,Surgery,1,PRITTLEWELL ENTRANCE,"Floor 1, Prittlewell Building via Cherry Tree Wing|Call 01702 435555 ext 3210..."
+Southend,Same Day Emergency Care (SDEC) and Clinical Decisions Unit (CDU),Ground,PRITTLEWELL ENTRANCE,"Cherry Tree Wing, Ground floor|Call 0300 443 0560|Visiting times between 8am ..."
+Southend,Trauma,7,TOWER BLOCK ENTRANCE,"Floor 7, Tower Block|Call 0300 443 0542|Visiting times are between 11am and 8..."
+Southend,Acute Services,TBC,TBC,"TBC - We need to confirm the following: most likely Floor 4, Tower Block, Cal..."
+Southend,Surgery with Trauma Flex,6,TOWER BLOCK ENTRANCE,"Floor 6, Tower Block|Call 0300 443 0546|Visiting times are between 11am and 8..."
+Southend,Renal Unit,Ground,CARLINGFORD ENTRANCE,
+Southend,Radiotherapy,Ground,RADIOTHERAPY,
