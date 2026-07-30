@@ -1,0 +1,202 @@
+﻿Hospital,Ward,Floor,ParkingLocation,Notes
+Basildon,CTC - Cardiac Catheter Labs,B,CTC - BACK,
+Basildon,CTC - Cardiac Investigations,A,CTC - FRONT,
+Basildon,CTC - Cardiac Rehab,A,CTC - FRONT,
+Basildon,CTC - Chelmer Ward,D,CTC - BACK,"Surgical | Level D, Cardiothoracic Centre | Call 0300 443 4916"
+Basildon,CTC - Colne Ward,C,CTC - BACK,"Intensive Care | Level C, Cardiothoracic Centre | Call 0300 443 2374"
+Basildon,CTC - CT Scanner,A,CTC - FRONT,
+Basildon,CTC - High Dependancy Unit (HDU),C,CTC - BACK,
+Basildon,CTC - Intensive Therapy Unit (ITU),C,CTC - BACK,
+Basildon,CTC - Outpatients,A,CTC - FRONT,
+Basildon,CTC - Pulmonary Lab,A,CTC - FRONT,
+Basildon,CTC - Roding Ward,B,CTC - BACK,"Angiograms | Level B, Cardiothoracic Centre | Call 0300 443 8100"
+Basildon,CTC - Special Echo,B,CTC - FRONT,
+Basildon,CTC - Thames Ward Day Unit,B,CTC - BACK,"Day stay | Level B, In Cardiothoracic Centre | Call 0300 443 3165"
+Basildon,CTC - X-Ray,A,CTC - FRONT,
+Basildon,Accident & Emergency (A&E),C,A & E,
+Basildon,A&E Minors,C,A & E,
+Basildon,Bereavement Office,C,RENAL,
+Basildon,Birthing Centre,D,RENAL,
+Basildon,Blood Testing,C,OUTPATIENTS,
+Basildon,Breast Care Unit,C,OUTPATIENTS,
+Basildon,Bulphan Ward,A,JUBILEE ENTRANCE,"General Surgical | Level A, Jubilee Wing | Call 0300 443 0413"
+Basildon,Cardiac Department,B,RENAL,
+Basildon,Cedar Ward,B,RENAL,"Post Natal | Level B, Maternity Block | Call 0300 443 2035 | See maternity visiting arrangements"
+Basildon,Cellular Pathology,C,OUTPATIENTS,
+Basildon,Childrens Hearing Centre,D,RENAL,
+Basildon,Child Development Centre,A,RENAL,
+Basildon,Children’s Outpatients,C,RENAL,
+Basildon,Colposcopy,C,RENAL,
+Basildon,Day Nursery,A,NURSERY,
+Basildon,Day Unit,A,DAY SURGERY,"Surgery | Back of Hospital, Opposite Cardiothoracic Centre Car Park | Call 0300 443 1979"
+Basildon,Dermatology Unit,C,OUTPATIENTS,
+Basildon,Discharge Lounge,C,JUBILEE ENTRANCE,"Level A, in Katherine Monk ward | Call 0300 443 0426"
+Basildon,Edith Clavell Ward,C,JUBILEE ENTRANCE,"Gastro | Level C, Jubilee Wing | Call 0300 443 0428"
+Basildon,Elizabeth Fry Ward,D,JUBILEE ENTRANCE,"Renal | Level D, Middle Block Main Hospital | Call 0300 443 0430"
+Basildon,Elsdon Ward,A,RENAL,"Level A, old block | Neonatal Intensive Care Unit (NICU) | Call 0300 443 0341 | See maternity visiting arrangements"
+Basildon,Endoscopy,C,ENDOSCOPY,
+Basildon,ENT,C,OUTPATIENTS,
+Basildon,Florence Nightingale Ward,B,JUBILEE ENTRANCE,"Care of the Elderly | Level B, Jubilee Wing | Call 0300 443 0433"
+Basildon,Gymnasium,C,OUTPATIENTS,
+Basildon,Gynaecology Outpatients,C,RENAL,
+Basildon,High Dependency Unit,A,ENDOSCOPY,Critical Care Unit on Diagram Level A
+Basildon,Intensive Therapy Unit (ITU),C,CTC - BACK,Based in CTC
+Basildon,Kingswood Ward,A,JUBILEE ENTRANCE,"Medical | Level A, Jubilee Wing | Call 0300 443 0444"
+Basildon,Labour Ward,C,RENAL,"Maternity | Level C, Maternity Block | Call 0300 443 4504 | See maternity visiting arrangements"
+Basildon,Linford Ward,A,JUBILEE ENTRANCE,"Orthopaedic | Level A, Jubilee Wing | Call 0300 443 0448"
+Basildon,Lionel Cosin Ward,C,JUBILEE ENTRANCE,"Level C, new block | Care of the Elderly | Call 0300 443 0449"
+Basildon,Lister Ward,B,JUBILEE ENTRANCE,"Care of the Elderly | Level B, Jubilee Wing | Call 0300 443 0484"
+Basildon,Maternity Assessment Unit,D,RENAL,
+Basildon,Maternity Outpatients,C,RENAL,
+Basildon,Maxillo-Facial,C,OUTPATIENTS,
+Basildon,Medical Admissions Unit (MAU),C,RENAL,
+Basildon,Mike Jackman Nuclear Medicine,C,ENDOSCOPY,
+Basildon,Neo Natal ICU,A,RENAL,"Maternity | Level A, Maternity Block | Call 0300 443 0341 | See maternity visiting arrangements"
+Basildon,Outpatients,C,OUTPATIENTS,
+Basildon,Oral Department,C,OUTPATIENTS,
+Basildon,Orsett Ward,C,JUBILEE ENTRANCE,"Acute Respiratory / Medicine | Level C, Jubilee Wing | Call 0300 443 0455"
+Basildon,Osler Ward,C,JUBILEE ENTRANCE,"Level C, Jubilee Wing | Call 0300 443 0456"
+Basildon,PALS,B,RENAL,
+Basildon,Pasteur Ward,B,JUBILEE ENTRANCE,"Stroke | Level B, Jubilee Wing | Call 0300 443 0458"
+Basildon,Pathology,C,OUTPATIENTS,
+Basildon,Penguin Ward,A,RENAL,"Paediatrics, emergency | Level C, Maternity Block | Call 0300 443 0459"
+Basildon,Physiotherapy,C,OUTPATIENTS,
+Basildon,Plaster Room,C,OUTPATIENTS,
+Basildon,Post Natal Ward,D,RENAL,
+Basildon,Pre-Op Assessment,C,OUTPATIENTS,
+Basildon,Puffin Ward,A,RENAL,"Paediatrics, medical | Level A, Maternity Block | Call 0300 443 0460"
+Basildon,Renal Unit,C,RENAL,
+Basildon,Restaurant,C,RENAL,
+Basildon,Surgical Referrals Unit (SRU),B,RENAL,"Level B, old block | Surgical | Call 0300 443 0463"
+Basildon,Ultrasound,C,ENDOSCOPY,
+Basildon,Ultrasound (Maternity),D,RENAL,
+Basildon,Wagtail Ward,A,RENAL,"Paediatric, surgery | Level A, Maternity Block | Call 0300 443 0467"
+Basildon,William Harvey Ward (Rheumatology Day Unit),D,RENAL,"Medical | Level D, Middle Block Main Hospital | Call 0300 443 0468"
+Basildon,Willow Ward,D,RENAL,"Delivery (low risk) | Level D, Maternity Block | Call 0300 443 6794 | See maternity visiting arrangements"
+Basildon,X-Ray,C,ENDOSCOPY,
+Basildon,Katherine Monk Ward,A,JUBILEE ENTRANCE,"Level A, Jubilee Wing | Call 0300 443 0443"
+Basildon,Horndon Ward,A,JUBILEE ENTRANCE,"Orthopaedic | Level A, Jubilee Wing | Call 0300 443 0440"
+Basildon,Kate Evelyn Luard Ward,A,JUBILEE ENTRANCE,"Level A, by Corner of Jubilee ward | Trauma and Orthopaedic | Call 0300 443 0409"
+Basildon,Short Stay Ward,A,JUBILEE ENTRANCE,"Overflow ward | Level A, old block | Call 0300 443 0426"
+Basildon,Laindon Ward,A,JUBILEE ENTRANCE,"Acute medicine | Level A, main building | Call 0300 443 8899"
+Basildon,Polly's Pad,A,RENAL,
+Basildon,Frederick Banting Ward,A,RENAL,"Vascular | Level A, Middle Block towards Jubilee Wing | Call 0300 443 5363"
+Basildon,Burstead Ward,A,RENAL,Acute Respiratory / Medicine | Level A | Call 0300 443 0414
+Basildon,Critical Care Unit,A,RENAL,"Intensive Care | Level A, Middle Block | Call 0300 443 7767"
+Basildon,Marjory Warren Ward,B,JUBILEE ENTRANCE,Palliative Care | Level B | Call 0300 443 0451
+Basildon,Oxygen Clinic Pain Management,B,JUBILEE ENTRANCE,
+Basildon,CT/MRI Courtyard,B,JUBILEE ENTRANCE,
+Basildon,James Mackenzie Ward,B,JUBILEE ENTRANCE,"Coronary Care | Level A, Middle Block Main Hospital | Call 0300 443 0441"
+Basildon,Mulberry Assessment Unit,D,RENAL,"Maternity | Level D, Maternity Block | Call 0300 443 5555 | See maternity visiting arrangements"
+Basildon,Maternity Ultrasound,D,RENAL,
+Basildon,Ambulatory Care (Medical same day emergency care unit),C,ENDOSCOPY,"Level C, AMU East | Call 0300 443 0409 | Clinic hours 8am–8pm"
+Basildon,Acute Medical Unit (AMU) East,C,ENDOSCOPY,"Level C, Main building | Call 0300 443 2201"
+Basildon,Acute Medical Unit (AMU) West,C,ENDOSCOPY,"Level C, Main building | Call 0300 443 0411"
+Basildon,Brook Suite,B,CTC - BACK,"Level B, In Cardiothoracic Centre | Call 0300 443 4159"
+Basildon,Clinical Decisions (CDU),D,ENDOSCOPY,"Based Within A,E, C | Call 0300 443 4984"
+Basildon,Early Pregnancy Unit (EPU),D,RENAL,"Gynaecology | Level D, Maternity Block | Call 0300 443 5602 | See maternity visiting arrangements"
+Basildon,Frailty Ambulatory Unit,C,JUBILEE ENTRANCE,"Level C, new block in Lionel Cosin ward | Call 0300 443 0449"
+Basildon,Frailty Assessment,C,JUBILEE ENTRANCE,"Level C, Level C, new block in Lionel Cosin ward | Call 0300 443 0449"
+Basildon,Laindon East,A,JUBILEE ENTRANCE,"Critical care | Level A, Middle Block in the main hospital | Call 0300 443 1305"
+Basildon,Paediatric Assessment Unit (PAU),C,A & E,Children's A&E | Call 0300 443 3782
+Basildon,Surgical Same Day Emergency Care (SSDEC — previously SACU),A,NEW - OPPOSITE CTC,Level A — on KEL — Jubilee Wing | Call 0300 443 4918 | Clinic hours 8am–8pm
+Broomfield,Accident and Emergency (A&E),2,Zone-E - East Entrance,External Entrance - Level 2 | Call 0300 443 0245
+Broomfield,Accident and Emergency (A&E) — paediatrics,2,Zone-E - East Entrance,External Entrance - Level 2 | Call 0300 443 0066
+Broomfield,"Acute Medical Unit (AMU, A207)",2,Zone-A - Main Entrance & Outpatients,"Zone A - 2nd floor, room 07 Medical Assessment Call 0300 443 0472"
+Broomfield,Antenatal ward (A404),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 04 Antenatal | Call 0300 443 2550 | See maternity visiting arrangements"
+Broomfield,Baddow ward (C250),2,Zone-C - Back Door,"Zone C, 2nd floor, room 50 Care of the Elderly | Call 0300 443 0403"
+Broomfield,Bardfield ward (C350),3,Zone-C - Back Door,"Zone C, 3rd floor, room 50 Care of the Elderly | Call 0300 443 0474"
+Broomfield,Billericay ward (E321),3,Zone-E - East Entrance,"Zone E, 3rd floor, room 21 ENT / Oral Max Fax | Call 0300 443 0406"
+Broomfield,Braxted ward (C251),2,Zone-C - Back Door,"Zone C, 2nd floor, room 51 | Care of the Elderly | Call 0300 443 0404"
+Broomfield,Burns Adults ward (E221),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 21 | Adult Burns | Call 0300 443 0475"
+Broomfield,Burns Intensive Care Unit (ITU),2,Zone-E - East Entrance,
+Broomfield,Children's Burns ward (E225),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 25 | Paediatric Burns | Call 0300 443 0405"
+Broomfield,Day Stay Admissions/Unit (B448),4,Zone-B - Back Door,"Zone B, 4th floor, room 48 | Day Cases | Call 0300 443 6813"
+Broomfield,"Frailty Assessment Base (FAB, A203)",2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 03 and is based on Gosfield ward | Acute Frailty Unit | Call 0300 443 0481"
+Broomfield,"Surgical Emergency ward (Feering, E125)",1,Zone-E - East Entrance,"Zone E, 1st floor, room 25 | Surgical Emergencies | Call 0300 443 0564"
+Broomfield,Felsted ward (A205),2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 05 | Renal and Cardiac | Call 0300 443 0477"
+Broomfield,"General High Dependency Unit (GHDU, A211)",2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 11 | High Dependency | Call 0300 443 5373"
+Broomfield,"General Intensive Care Unit (GICU, E226)",2,Zone-E - East Entrance,"Zone E, 2nd floor, room 26 | Intensive Care | Call 0300 443 0356"
+Broomfield,Gosfield Acute Frailty Unit (A203),2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 03 | Acute Frailty Unit | Ward — call 0300 443 0481 | Frailty assessment bay — call 0300 443 0481"
+Broomfield,Heybridge ward (A303),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 03 | General surgery, urology, upper and lower GI | Call 0300 443 0482"
+Broomfield,John Ray ward (E323),3,Zone-E - East Entrance,"Zone E, 3rd floor, room 23 Elective | Orthopaedic | Call 0300 443 0483"
+Broomfield,Lister ward (C451) including Discharge lounge,4,Zone-C - Back Door,"Zone C, 4th floor, room 51 | Call 0300 443 0450 | Discharge lounge | The discharge lounge is included within Lister ward. You can call them on 0300 444 0333"
+Broomfield,Labour ward (A402),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 02 | Call 0300 443 4224 | See maternity visiting arrangements"
+Broomfield,Maternity Triage (A404),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 04, Antenatal | Call 0300 443 7165 | See maternity visiting arrangements"
+Broomfield,Mayflower ward (E322),3,Zone-E - East Entrance,"Zone E, 3rd floor, room 22 | Surgical Ward | Call 0300 443 0485"
+Broomfield,Neonatal Unit (A406),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor room 06 | Neonatal Care | Call 0300 443 0534 | See maternity visiting arrangements"
+Broomfield,Notley ward (E223),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 23 | Emergency Orthopaedic | Call 0300 443 0487"
+Broomfield,"Paediatric Assessment Unit (PAU, E222)",1,Zone-E - East Entrance,"Zone E, 1st floor, room 22 | Assessment | Call 0300 443 0573"
+Broomfield,Phoenix ward (E122),1,Zone-E - East Entrance,"Zone E, 1st floor, room 22 | Paediatric Care | Call 0300 443 0572"
+Broomfield,Pegasus ward (E122),1,Zone-E - East Entrance,"Zone E, 1st floor, room 22 | Paediatric Care | Call 0300 443 1239"
+Broomfield,Postnatal ward (A405),4,Zone-A - Main Entrance & Outpatients,"Zone A, 4th floor, room 05 | Postnatal Care | Call 0300 443 7632 | Maternity Sister, call 0300 443 1780 | Maternity Reception, call 0300 443 7632 | See maternity visiting arrangements"
+Broomfield,Rayne ward (A304),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 04 | Surgery, Urology, Gynaecology | Call 0300 444 1252 | Gynae Ambulatory Care Unit (GACU) and the Early Pregnancy Unit (EPU) are located on Rayne ward but are a separate service — for more information, visit Gynaecology services"
+Broomfield,"Same Day Emergency Care (SDEC, A204)",2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 4 | Medical | Call 0300 443 7616"
+Broomfield,"Cressing ward (Surgical assessment and treatment Unit (SATU, B344)",3,Zone-B - Back Door,"Zone B, 3rd floor, room 4 | Orthopaedic surgery | Call 0300 443 2979"
+Broomfield,"Surgical and Urology Same Day Emergency Care (SUSDEC, E125)",1,Zone-B - Back Door,"Zone E, 1st floor, room 25 | Call 0300 443 4837"
+Broomfield,Stock ward (E320),3,Zone-E - East Entrance,"Zone E, 3rd floor - room 20 | Plastic Surgery ward | Call 0300 443 0494"
+Broomfield,Stroke Unit (A302),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 02 | Acute stroke patients | Call 0300 443 7662 or 0300 443 3705"
+Broomfield,Terling ward (A305),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 05 | Respiratory | Call 0300 443 0496"
+Broomfield,Tiptree ward (C351),3,Zone-C - Back Door,"Zone C, 3rd floor, room 51 | General Medicine | Call 0300 443 0497"
+Broomfield,Tollesbury ward (E222),2,Zone-E - East Entrance,"Zone E, 2nd floor, room 22 | Gastro ward | Call 0300 443 0498"
+Broomfield,Wizard ward (A301),3,Zone-A - Main Entrance & Outpatients,"Zone A, 3rd floor, room 01 | Paediatric day case | Call 0300 443 4414"
+Broomfield,Writtle ward (C450),4,Zone-C - Back Door,"Zone C, 4th floor, room 50 | Care of the elderly | Call 0300 443 0499"
+Southend,Accident and Emergency (A&E),Ground,PRITTLEWELL ENTRANCE,Emergency Department Ground floor | Call 0300 443 9992
+Southend,Accident and Emergency (A&E) paediatrics,Ground,PRITTLEWELL ENTRANCE,"Paediatric Emergency Department | Ground floor, Emergency Department | Call 0300 443 0347"
+Southend,Estuary Ward,Ground,CARDIGAN ENTRANCE,"Estuary and Bedwell on the ground floor | Call 0300 443 8745, 0300 443 1184 or 0300 443 1298"
+Southend,Bedwell Ward,Ground,CARDIGAN ENTRANCE,"Estuary and Bedwell on the ground floor | Call 0300 443 8745, 0300 443 1184 or 0300 443 1298"
+Southend,Acute Medical Service / Edmund Stone ward,2,PRITTLEWELL ENTRANCE,"Floor 2, Prittlewell Building | Call 0300 443 0562"
+Southend,Acute Medical Receiving Unit (AMRU) on Dowsett ward,Ground,PRITTLEWELL ENTRANCE,"Acute Medicine | Prittlewell wing, Ground Floor, Dowsett ward | Call 0300 443 0562"
+Southend,Windsor Ward,6,TOWER BLOCK ENTRANCE,"Floor 6, Tower Block | Also hosts Active Home Suite | Discharge unit and winter e"
+Southend,Active home suite — Windsor,6,TOWER BLOCK ENTRANCE,"Now situated on Windsor ward, 6th floor tower block. We will be called Active home suite- Windsor | Discharge unit and winter escalation area | Call 0300 443 2257 or 0300 443 6914"
+Southend,Balmoral Haematology and Oncology Unit,1,CARDIGAN ENTRANCE,"Oncology, Haematology, Palliative Care | Floor 1, Cardigan Building | Call 0300 443 0504"
+Southend,Blenheim ward Renal,3,TOWER BLOCK ENTRANCE,"General Medical | Floor 3, Tower Block | Call 0300 443 0507"
+Southend,Cardiac Care Unit (CCU) / Sita Lumsden ward,2,TOWER BLOCK ENTRANCE,"Cardiology | Floor 2, Tower Block | Call 0300 443 0145"
+Southend,Castlepoint ward,8,TOWER BLOCK ENTRANCE,"MSK and Elective | Floor 8, Tower Block | Call 0300 443 0509"
+Southend,Central Delivery Suite (CDS),2,CARDIGAN ENTRANCE,"Maternity | Floor 2, Cardigan Building | Call 0300 443 0022 | See maternity visiting arrangements"
+Southend,Chalkwell ward,1,CARDIGAN ENTRANCE,"Short Stay for Medicine of the Elderly (DME) | Floor 1, Cardigan Building | Call 0300 443 0513"
+Southend,Critical Care ward,1,PRITTLEWELL ENTRANCE,"Critical Care | Floor 1, Prittlewell Building | Call 0300 443 1121 (bay one) or 0300 443 0514 (bay two)"
+Southend,Day Surgery Unit,Ground,HILLBOROUGH ENTRANCE,"Surgical Specialties | Ground Floor, Hillborough Building | Call 0300 443 1250"
+Southend,Discharge Lounge,Ground,PRITTLEWELL ENTRANCE,"Paglesham ward, Ground Floor, Cardigan Building | Call 0300 443 8121, 0300 443 0538, 0300 443 1698"
+Southend,Eastwood ward,2,CARDIGAN ENTRANCE,"Gynaecology | Floor 2, Cardigan Building | Call 0300 443 0041 or 0300 443 0518"
+Southend,Eleanor Hobbs ward,5,TOWER BLOCK ENTRANCE,"Gastroenterology, infectious diseases, general medicine | Floor 5, Tower Block | Call 0300 443 0519"
+Southend,Elective Admissions Lounge (EAL),1,TOWER BLOCK ENTRANCE,"Surgical | Floor 1, Tower Block | Call 0300 443 5365 or 0300 443 5365"
+Southend,Eye ward,Ground,EYE UNIT,Eye unit | Ophthalmology — call 0300 443 2569
+Southend,Hockley ward,1,CARDIGAN ENTRANCE,"Department of medicine for the Elderly (DME) | Floor 1, Cardigan Building | Call 0300 443 0528"
+Southend,J Alfred Lee ward,1,HILLBOROUGH ENTRANCE,"Post-Operative | Floor 1, Hillborough Building | Call 0300 443 2384"
+Southend,High Dependency Unit (HDU),1,PRITTLEWELL ENTRANCE,"Floor 1, Prittlewell Building (via Kitty Hubbard) | Call 0300 443 0530"
+Southend,Infusion Unit,2,PRITTLEWELL ENTRANCE,"Floor 2, Cherry Tree | Call 0300 443 6086"
+Southend,Margaret Broom 1,2,CARDIGAN ENTRANCE,"Antenatal - Maternity | Floor 2, Cardigan Building | Call 0300 443 0041 | See maternity visiting arrangements"
+Southend,Margaret Broom 2,2,CARDIGAN ENTRANCE,"Postnatal - Maternity | Floor 2, Cardigan Building | Call 0300 443 0047 | See maternity visiting arrangements"
+Southend,Neonatal unit,2,CARDIGAN ENTRANCE,"Neonatal Intensive Care - Maternity | Floor 2, Cardigan Building | Call 0300 443 2371 | See maternity visiting arrangements"
+Southend,Neptune ward,1,CARDIGAN ENTRANCE,"Paediatric | Floor 1, Cardigan Building | Call 0300 443 0535"
+Southend,Paediatric Assessment Unit (PAU),1,CARDIGAN ENTRANCE,"Floor 1, Cardigan Building | Call 0300 443 0535"
+Southend,Princess Anne ward,9,TOWER BLOCK ENTRANCE,"Elective | Floor 9, Tower Block | Call 0300 443 0539 | Colorectal Recovery Team — 0300 443 7101 | Urology Enhanced Recovery — 0300 443 7640"
+Southend,Urology Enhanced Recovery,Ground,PRITTLEWELL ENTRANCE,TBC - Floor and building need confirming | Call 0300 443 7640 | AccessAble inform
+Southend,Carlingford Centre,Ground,CARLINGFORD ENTRANCE,"Carlingford Centre is at the rear of the hospital and includes Chemotherapy, Renal, Rheumatology"
+Southend,Surgical Assessment Unit (SAU),1,PRITTLEWELL ENTRANCE,"Surgery | Floor 1, Prittlewell Building (via Cherry Tree wing) | Call 0300 443 1671"
+Southend,Surgery,1,PRITTLEWELL ENTRANCE,"Floor 1, Prittlewell Building via Cherry Tree Wing | Call 01702 435555 ext 3210"
+Southend,Same Day Emergency Care (SDEC) and Clinical Decisions Unit (CDU),Ground,PRITTLEWELL ENTRANCE,"Acute Medicine | Cherry Tree Wing, Ground Floor | Call 0300 443 0560"
+Southend,Shopland ward,7,TOWER BLOCK ENTRANCE,"Trauma | Floor 7, Tower Block | Call 0300 443 0542"
+Southend,Southbourne ward,4,TOWER BLOCK ENTRANCE,"Acute Services | Floor 4, Tower Block | Call 0300 443 0543"
+Southend,Windsor ward,6,TOWER BLOCK ENTRANCE,"Surgery | Floor 6, Tower Block | Call 0300 443 0546 (only for Windsor ward not AHS)"
+Southend,Renal dialysis,Ground,CARLINGFORD ENTRANCE,"Renal unit | Carlingford Centre, Rear of Hospital | Call 0300 443 0540"
+Southend,Radiotherapy,Ground,RADIOTHERAPY,
+Southend,Urology,Ground,PRITTLEWELL ENTRANCE,
+Southend,Benfleet ward,Ground,CARDIGAN ENTRANCE,"Acute Stroke Unit | Ground floor, Cardigan Building | Call 0300 443 0505"
+Southend,Cardiac and Medical Day Stay (CMDS),Ground,HILLBOROUGH ENTRANCE,"Cardiology | Ground floor, Hillborough Building | Call 0300 443 4084"
+Southend,Community Midwifery Service,2,CARDIGAN ENTRANCE,"Maternity | Floor 2, Cardigan Building | Call 0300 443 0045 | See maternity visiting arrangements"
+Southend,Day Assessment Unit (DAU),Ground,PRITTLEWELL ENTRANCE,"Older Persons Ambulatory Service | Ground Floor, Prittlewell Building | Call 0300 443 0515"
+Southend,Dowsett ward,Ground,PRITTLEWELL ENTRANCE,"Same Day Emergency Care | Ground floor, Prittlewell Building | Call 0300 443 0562"
+Southend,Elizabeth Loury ward,Ground,PRITTLEWELL ENTRANCE,"Oncology, Haematology | Ground Floor, Prittlewell Building | Call 0300 443 2090"
+Southend,Endoscopy unit,Mezzanine,TOWER BLOCK ENTRANCE,"Mz, Tower Block | Call 0300 443 4868"
+Southend,Eye Theatre Eye unit,Ground,EYE UNIT,Ophthalmology | Call 0300 443 5041
+Southend,Fetal Medicine Unit,2,CARDIGAN ENTRANCE,"Maternity | Floor 2, Cardigan Building (B1) | Call 0300 443 0042 | See maternity visiting arrangements"
+Southend,Gordon Hopkins ward,2,TOWER BLOCK ENTRANCE,"Cardiology | Floor 2, Tower Block | Call 0300 443 0145"
+Southend,Kitty Hubbard,1,PRITTLEWELL ENTRANCE,"High Dependency Unit (HDU) | Floor 1, Prittlewell Building | Call 0300 443 0530"
+Southend,Midwife-led birthing unit,2,CARDIGAN ENTRANCE,"Maternity | Floor 2, Cardigan building | Call 0300 443 3022 | See maternity visiting arrangements"
+Southend,Oncology and Haematology,Ground,CARDIGAN ENTRANCE,"Outpatients | Ground Floor, Cardigan Building, (via Estuary ward) | Call 0300 443 0523"
+Southend,Paglesham ward,Ground,CARDIGAN ENTRANCE,"Stroke Rehab Unit | Ground Floor, Cardigan Building | Call 0300 443 0538"
+Southend,Rochford ward,Ground,CARDIGAN ENTRANCE,"Respiratory, ARCU | Ground Floor, Cardigan Building | Call 0300 443 2058"
+Southend,Stambridge ward,1,CARDIGAN ENTRANCE,"Diabetes and Endocrine, Infectious Diseases - General Medical Floor 1, Cardigan Building | Call 0300 443 3730"
+Southend,Westcliff ward,Ground,CARDIGAN ENTRANCE,"Respiratory | Ground Floor, Cardigan Building | Call 0300 443 0545"
