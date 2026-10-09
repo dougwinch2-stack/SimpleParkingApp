@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b4f6c">
+  <title>Doug's Style Guide</title>
+  <link rel="stylesheet" href="dougs.css">
+  <style>
+    /* Page-only helpers for this guide (not needed in the apps) */
+    .swatches { display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); }
+    .swatch { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-3); font-size: var(--text-xs); font-weight: 700; }
+    .toolbar { position: sticky; top: 0; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .toolbar .container { padding-block: var(--space-2); }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a class="app-header__title" href="#">Doug's Demo</a>
+      <nav class="app-header__nav" aria-label="Main">
+        <a href="#" aria-current="page">Dashboard</a>
+        <a href="#">Vehicles</a>
+        <a href="#">Add record</a>
+      </nav>
+      <p class="app-header__subtitle">Shared style guide · the same stylesheet drives Doug's Parking App and Doug's Demo</p>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="container container--wide row row--between">
+      <div class="row" role="group" aria-label="Theme">
+        <span class="label">Theme:</span>
+        <button class="btn btn--ghost" data-theme-btn="auto">Follow device</button>
+        <button class="btn btn--ghost" data-theme-btn="light">Light</button>
+        <button class="btn btn--ghost" data-theme-btn="dark">Dark</button>
+      </div>
+      <label class="check"><input type="checkbox" id="wallboardToggle"> Wallboard size</label>
+    </div>
+  </div>
+
+  <main class="container container--wide stack--lg stack">
+
+    <!-- ============ DOUG'S DEMO: dashboard pieces ============ -->
+    <section class="stack">
+      <div class="row row--between">
+        <h1>Fleet status</h1>
+        <span class="updated" id="updated">Updated 09:41</span>
+      </div>
+
+      <div class="tiles">
+        <a class="tile tile--danger" href="#"><div class="tile__value">4</div><div class="tile__label">MOT overdue</div></a>
+        <a class="tile tile--warn"   href="#"><div class="tile__value">7</div><div class="tile__label">MOT due ≤ 30 days</div></a>
+        <a class="tile tile--danger" href="#"><div class="tile__value">2</div><div class="tile__label">Tyres below 2 mm</div></a>
+        <a class="tile tile--warn"   href="#"><div class="tile__value">5</div><div class="tile__label">Deep clean due</div></a>
+        <a class="tile tile--ok"     href="#"><div class="tile__value">182</div><div class="tile__label">Fully compliant</div></a>
+      </div>
+
+      <h2 class="section-title">Vehicles needing attention</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Reg</th><th>Fleet no.</th><th>Base</th><th>MOT</th><th>Tyres</th><th>Deep clean</th><th class="num">Mileage</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="reg">DM17 HLC</td><td>FLT014</td><td>Hillcrest</td><td><span class="badge badge--danger">Failed</span></td><td><span class="badge badge--ok">OK</span></td><td><span class="badge badge--danger">50 days</span></td><td class="num">305,505</td></tr>
+            <tr><td class="reg">DM18 RVS</td><td>FLT022</td><td>Riverside</td><td><span class="badge badge--danger">Expired 6 days</span></td><td><span class="badge badge--ok">OK</span></td><td><span class="badge badge--warn">38 days</span></td><td class="num">234,334</td></tr>
+            <tr><td class="reg">DM19 EFD</td><td>FLT031</td><td>Eastfield</td><td><span class="badge badge--warn">24 days left</span></td><td><span class="badge badge--danger">1.8 mm</span></td><td><span class="badge badge--ok">30 days</span></td><td class="num">237,478</td></tr>
+            <tr><td class="reg">DM20 NGT</td><td>FLT007</td><td>Northgate</td><td><span class="badge badge--warn">14 days left</span></td><td><span class="badge badge--warn">2.7 mm</span></td><td><span class="badge badge--ok">20 days</span></td><td class="num">202,990</td></tr>
+            <tr><td class="reg">DM16 RES</td><td>FLT009</td><td>Northgate</td><td><span class="badge badge--ok">Valid</span></td><td><span class="badge badge--neutral">Not checked</span></td><td><span class="badge badge--danger">60 days</span></td><td class="num">353,778</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ DOUG'S PARKING APP: search + cards ============ -->
+    <section class="stack">
+      <h2 class="section-title">Doug's Parking App components</h2>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="hosp">Hospital</label>
+          <select id="hosp"><option>All hospitals</option><option>Basildon</option><option>Broomfield</option><option>Southend</option></select>
+        </div>
+        <div class="field">
+          <label for="q">Ward or department</label>
+          <input id="q" type="search" placeholder="Search ward, department or clinic…" autocomplete="off">
+        </div>
+      </div>
+      <p class="status-line">3 results</p>
+
+      <div class="grid">
+        <article class="card">
+          <div class="card__eyebrow">Basildon</div>
+          <h3 class="card__title">CTC - Chelmer Ward</h3>
+          <dl class="card__body">
+            <div><dt>Floor:</dt> <dd>D</dd></div>
+            <div><dt>Park at:</dt> <dd>CTC - BACK</dd></div>
+            <div><dt>Notes:</dt> <dd>Surgical<br>Level D, Cardiothoracic Centre<br>Call 0300 443 4916</dd></div>
+          </dl>
+          <div class="card__actions">
+            <a class="btn btn--secondary" href="#">Map</a>
+            <a class="btn btn--go" href="#">Navigate</a>
+            <a class="btn btn--ghost" href="#">Hospital diagram</a>
+          </div>
+        </article>
+
+        <article class="card card--warn">
+          <div class="card__eyebrow">Southend</div>
+          <h3 class="card__title">PET CT Scanner</h3>
+          <dl class="card__body">
+            <div><dt>Park at:</dt> <dd>PET CT SCANNER</dd></div>
+          </dl>
+          <div class="alert alert--warn">
+            <strong>Driver notes</strong>
+            Scanner believed to be in a mobile unit in the main car park. Use the Prittlewell Chase entrance — Google may suggest a route blocked by a fence.
+          </div>
+          <div class="card__actions" style="margin-top: var(--space-3)">
+            <a class="btn btn--secondary" href="#">Map</a>
+            <a class="btn btn--go" href="#">Navigate</a>
+          </div>
+        </article>
+
+        <article class="card card--plain">
+          <div class="card__eyebrow">Basildon</div>
+          <h3 class="card__title">Surgical Same Day Emergency Care</h3>
+          <dl class="card__body">
+            <div><dt>Floor:</dt> <dd>A</dd></div>
+          </dl>
+          <p class="text-danger small"><strong>Parking location not yet available</strong></p>
+          <div class="card__actions">
+            <span class="btn" aria-disabled="true">No hospital diagram</span>
+            <a class="btn btn--ghost" href="#">Suggest a correction</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ FORMS ============ -->
+    <section class="stack">
+      <h2 class="section-title">Form (e.g. add MOT record)</h2>
+      <div class="container" style="padding:0">
+        <form class="form-panel" onsubmit="return false">
+          <div class="field search">
+            <label for="veh">Vehicle registration</label>
+            <input id="veh" type="search" value="DM1" autocomplete="off" aria-controls="veh-results" aria-expanded="true">
+            <div class="search__results" id="veh-results" role="listbox" style="position:static">
+              <div class="search__item" role="option" aria-selected="true"><span class="reg">DM16 RES</span> <span class="muted small">· Northgate</span></div>
+              <div class="search__item" role="option"><span class="reg">DM17 HLC</span> <span class="muted small">· Hillcrest</span></div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="td">Test date</label>
+              <input id="td" type="date" value="2026-10-09">
+            </div>
+            <div class="field">
+              <label for="res">Result</label>
+              <select id="res"><option>Pass</option><option>PRS</option><option>Fail</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="exp">New expiry date</label>
+            <input id="exp" type="date" value="2026-07-01" aria-invalid="true" aria-describedby="exp-hint exp-err">
+            <div class="field__hint" id="exp-hint">As shown on the MOT certificate.</div>
+            <div class="field__error" id="exp-err">Expiry date must be after the test date.</div>
+          </div>
+          <div class="field">
+            <label for="adv">Advisories</label>
+            <textarea id="adv" placeholder="Enter advisories, or leave blank if none"></textarea>
+          </div>
+          <div class="alert alert--ok"><strong>Saved</strong> MOT for DM16 RES recorded.</div>
+          <div class="alert alert--danger"><strong>Not saved</strong> You need to be logged in to add records.</div>
+          <div class="row">
+            <button class="btn btn--go" type="submit">Save MOT record</button>
+            <button class="btn btn--ghost" type="button">Cancel</button>
+            <button class="btn btn--danger" type="button">Remove</button>
+            <button class="btn btn--primary" type="button" disabled>Disabled</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ STATES & PALETTE ============ -->
+    <section class="stack">
+      <h2 class="section-title">Badges, alerts and states</h2>
+      <div class="row">
+        <span class="badge badge--ok">Valid</span>
+        <span class="badge badge--warn">Due soon</span>
+        <span class="badge badge--danger">Overdue</span>
+        <span class="badge badge--info">Booked</span>
+        <span class="badge badge--neutral">Inactive</span>
+      </div>
+      <div class="alert alert--info"><strong>Info</strong> Upcoming means due in the next 30 days.</div>
+      <div class="empty">No wards match your search.</div>
+      <div class="skeleton" style="height:3rem" aria-label="Loading"></div>
+
+      <h2 class="section-title">Palette (live tokens)</h2>
+      <div class="swatches">
+        <div class="swatch" style="background:var(--brand-fill);color:var(--on-fill)">brand-fill</div>
+        <div class="swatch" style="background:var(--brand-soft);color:var(--brand-text)">brand-soft / text</div>
+        <div class="swatch" style="background:var(--ok-soft);color:var(--ok-text)">ok</div>
+        <div class="swatch" style="background:var(--warn-soft);color:var(--warn-text)">warn</div>
+        <div class="swatch" style="background:var(--danger-soft);color:var(--danger-text)">danger</div>
+        <div class="swatch" style="background:var(--surface);color:var(--text)">surface / text</div>
+        <div class="swatch" style="background:var(--bg);color:var(--text-muted)">bg / muted</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const root = document.documentElement;
+    const params = new URLSearchParams(location.search);
+
+    function setTheme(mode) {
+      if (mode === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", mode);
+      document.querySelectorAll("[data-theme-btn]").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.themeBtn === mode)));
+    }
+    document.querySelectorAll("[data-theme-btn]").forEach(b =>
+      b.addEventListener("click", () => setTheme(b.dataset.themeBtn)));
+    setTheme(params.get("theme") || "auto");
+
+    const wb = document.getElementById("wallboardToggle");
+    wb.checked = params.has("wallboard");
+    root.classList.toggle("wallboard", wb.checked);
+    wb.addEventListener("change", () => root.classList.toggle("wallboard", wb.checked));
+  </script>
+</body>
+</html>
