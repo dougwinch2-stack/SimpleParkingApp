@@ -114,7 +114,7 @@ Broomfield,Children's Burns ward (E225),2,Zone-E - East Entrance,"Zone E, 2nd fl
 Broomfield,Day Stay Admissions/Unit (B448),4,Zone-B - Back Door,"Zone B, 4th floor, room 48 | Day Cases | Call 0300 443 6813"
 Broomfield,"Frailty Assessment Base (FAB, A203)",2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 03 and is based on Gosfield ward | Acute Frailty Unit | Call 0300 443 0481"
 Broomfield,"Surgical Emergency ward (Feering, E125)",1,Zone-E - East Entrance,"Zone E, 1st floor, room 25 | Surgical Emergencies | Call 0300 443 0564"
-Broomfield,Felsted ward (A205),2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 05 | Renal and Cardiac | Call 0300 443 0477"
+Broomfield,Felsted ward (A205),2,A&E Ramp - Level 2,"Zone A, 2nd floor, room 05 | Renal and Cardiac | Call 0300 443 0477"
 Broomfield,"General High Dependency Unit (GHDU, A211)",2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 11 | High Dependency | Call 0300 443 5373"
 Broomfield,"General Intensive Care Unit (GICU, E226)",2,Zone-E - East Entrance,"Zone E, 2nd floor, room 26 | Intensive Care | Call 0300 443 0356"
 Broomfield,Gosfield Acute Frailty Unit (A203),2,Zone-A - Main Entrance & Outpatients,"Zone A, 2nd floor, room 03 | Acute Frailty Unit | Ward — call 0300 443 0481 | Frailty assessment bay — call 0300 443 0481"
@@ -201,3 +201,4 @@ Southend,Rochford ward,Ground,CARDIGAN ENTRANCE,"Respiratory, ARCU | Ground Floo
 Southend,Stambridge ward,1,CARDIGAN ENTRANCE,"Diabetes and Endocrine, Infectious Diseases - General Medical Floor 1, Cardigan Building | Call 0300 443 3730"
 Southend,Westcliff ward,Ground,CARDIGAN ENTRANCE,"Respiratory | Ground Floor, Cardigan Building | Call 0300 443 0545"
 Broomfield,Main Entrance & Outpatients,1,Zone-A - Main Entrance & Outpatients,"Zone A, 1st floor"
+Broomfield,Cardiac Centre (A210),2,A&E Ramp - Level 2,"Zone A, 2nd floor, room 10 | Cardiology day cases and tests | Call 0300 443 2100 (non-invasive services) | Mon–Fri 9am–4:30pm"
