@@ -1,0 +1,40 @@
+# Weekly backup of the ward and parking data into this GitHub repository.
+# Saves each table as a spreadsheet file (CSV) in the "backups" folder.
+# It only saves when something has changed.
+name: Weekly data backup
+
+on:
+  schedule:
+    - cron: "41 5 * * 1"     # every Monday morning
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write             # allows it to save the backup files
+
+env:
+  SUPABASE_URL: "https://vruayefwgzwlwestsedo.supabase.co"
+  SUPABASE_KEY: "sb_publishable_AWpInxkGOBc1bWFsJQjB_g_vBKftpm9"
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the tables
+        run: |
+          mkdir -p backups
+          for table in hospitals parking_locations wards diagrams; do
+            curl --fail --silent --show-error \
+              -H "apikey: $SUPABASE_KEY" -H "Accept: text/csv" \
+              "$SUPABASE_URL/rest/v1/$table?select=*&order=id" -o "backups/$table.csv"
+            echo "$table: $(( $(wc -l < backups/$table.csv) - 1 )) rows"
+          done
+
+      - name: Save to GitHub
+        run: |
+          git config user.name "Weekly backup"
+          git config user.email "actions@users.noreply.github.com"
+          git add backups
+          git commit -m "Weekly data backup" || echo "Nothing changed"
+          git push
