@@ -46,6 +46,18 @@
       #tabs button:first-child { grid-column: 1 / -1; }
     }
 
+    /* ---- Parking photos ---- */
+    .photo-list { display: grid; gap: var(--space-2); margin-bottom: var(--space-2); }
+    .photo-item {
+      display: grid; grid-template-columns: 88px 1fr; gap: var(--space-3); align-items: start;
+      padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+    }
+    .photo-item img { width: 88px; height: 88px; object-fit: cover; border-radius: var(--radius-sm); background: var(--surface-2); }
+    .photo-item input { width: 100%; }
+    .photo-tools { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); align-items: center; }
+    .photo-status { color: var(--text-muted); font-size: var(--text-xs); }
+    .add-photo { display: inline-flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+
     /* ---- Usage report ---- */
     .tile__sub { color: var(--text-muted); font-size: var(--text-xs); margin-top: 2px; }
     .usage-tiles .tile__value { color: var(--text); }
@@ -167,7 +179,8 @@
     const $ = id => document.getElementById(id);
     let db = null;
     let tab = "suggestions";
-    let hospitals = [], parking = [], wards = [], suggestions = [];
+    let hospitals = [], parking = [], wards = [], suggestions = [], photos = [];
+    const PHOTO_BUCKET = "parking-photos";
     let showFinished = false;
 
     /* ---------- Helpers ---------- */
@@ -211,14 +224,16 @@
     /* ---------- Data ---------- */
 
     async function loadAll() {
-      const [h, p, w, s] = await Promise.all([
+      const [h, p, w, s, ph] = await Promise.all([
         db.from("hospitals").select("*").order("name"),
         db.from("parking_locations").select("*").order("name"),
         db.from("wards").select("*").order("name"),
-        db.from("suggestions").select("*").order("created_at", { ascending: false }).limit(300)
+        db.from("suggestions").select("*").order("created_at", { ascending: false }).limit(300),
+        db.from("parking_photos").select("*").order("sort_order")
       ]);
       for (const r of [h, p, w, s]) if (r.error) throw r.error;
       hospitals = h.data; parking = p.data; wards = w.data; suggestions = s.data;
+      photos = ph.error ? [] : ph.data;      // empty until 07_photos.sql has been run
       updateSuggestionCount();
     }
 
@@ -271,8 +286,10 @@
           .filter(p => matches(`${p.name} ${p.driver_notes || ""}`))
           .map(p => {
             const used = wards.filter(w => w.parking_location_id === p.id).length;
+            const pics = photos.filter(x => x.parking_location_id === p.id).length;
             return { id: p.id, title: p.name, active: p.active,
-                     sub: `${hospitalName(p.hospital_id)} · used by ${used} ward${used === 1 ? "" : "s"}` };
+                     sub: `${hospitalName(p.hospital_id)} · used by ${used} ward${used === 1 ? "" : "s"}` +
+                          (pics ? ` · ${pics} photo${pics === 1 ? "" : "s"}` : "") };
           });
       } else {
         items = hospitals
@@ -336,7 +353,7 @@
       if (error) {
         const missing = /usage_summary|function|schema cache/i.test(error.message || "");
         $("usageBody").innerHTML = `<div class="alert alert--warn">${missing
-          ? "The usage report isn't switched on yet. Run <strong>06_share_links.sql</strong> in Supabase's SQL Editor, then come back here."
+          ? "The usage report isn't switched on yet. Run <strong>07_photos.sql</strong> in Supabase's SQL Editor, then come back here."
           : escapeHtml(friendlyError(error))}</div>`;
         return;
       }
@@ -425,7 +442,7 @@
           <div class="tile"><div class="tile__value">${fmt(t.navigate)}</div><div class="tile__label">Navigate taps</div></div>
           <div class="tile"><div class="tile__value">${fmt(t.map)}</div><div class="tile__label">Map taps</div></div>
         </div>
-        <p class="usage-also">Also ${plural(t.diagram, "hospital diagram")} opened, ${plural(t.call, "phone number")} tapped,
+        <p class="usage-also">Also ${plural(t.diagram, "hospital diagram")} opened, ${plural(t.photo, "parking photo")} viewed, ${plural(t.call, "phone number")} tapped,
           the feedback form opened ${plural(t.feedback, "time")},
           ${plural(t.share, "ward link")} shared and ${plural(t.shared_open, "shared link")} opened.
           Phones are counted anonymously – the app never knows who is using it.</p>
@@ -457,7 +474,7 @@
 
         <section class="usage-card">
           <h3>Most used wards</h3>
-          <p class="hint">Taps on Map, Navigate, diagram or phone number.</p>
+          <p class="hint">Taps on Map, Navigate, diagram, photos or phone number.</p>
           ${topWards.length ? `<div class="table-wrap"><table class="table">
             <thead><tr><th>Ward</th><th class="num">Taps</th><th class="num">Navigate</th></tr></thead>
             <tbody>${topWards.map(r => `
@@ -486,7 +503,7 @@
 
         <section class="usage-card">
           <h3>Hospitals</h3>
-          <p class="hint">Taps on Map, Navigate, diagram or phone number.</p>
+          <p class="hint">Taps on Map, Navigate, diagram, photos or phone number.</p>
           ${byHospital.length ? `<div class="table-wrap"><table class="table">
             <thead><tr><th>Hospital</th><th class="num">Taps</th><th class="num">Share</th><th class="num">Navigate</th></tr></thead>
             <tbody>${byHospital.map(r => `
@@ -735,6 +752,164 @@
       }
     });
 
+    /* ---------- Parking photos ---------- */
+
+    const CAMERA_ICON =
+      '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>';
+
+    const photoUrl = path => db.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+    const spotPhotos = spotId => photos
+      .filter(x => x.parking_location_id === spotId)
+      .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+
+    function renderPhotoList(spotId) {
+      const list = $("photoList");
+      if (!list) return;
+      const items = spotPhotos(spotId);
+      list.innerHTML = items.length ? items.map((x, i) => `
+        <div class="photo-item" data-photo="${x.id}">
+          <a href="${escapeHtml(photoUrl(x.file_path))}" target="_blank" rel="noopener"><img src="${escapeHtml(photoUrl(x.file_path))}" alt="Photo ${i + 1}" loading="lazy"></a>
+          <div>
+            <label class="visually-hidden" for="cap-${x.id}">Caption for photo ${i + 1}</label>
+            <input id="cap-${x.id}" data-caption="${x.id}" maxlength="120" value="${escapeHtml(x.caption || "")}"
+                   placeholder="Caption, e.g. Use the right-hand door">
+            <div class="photo-tools">
+              ${i > 0 ? `<button class="link-btn" type="button" data-photo-move="-1" data-id="${x.id}">Move up</button>` : ""}
+              ${i < items.length - 1 ? `<button class="link-btn" type="button" data-photo-move="1" data-id="${x.id}">Move down</button>` : ""}
+              <button class="link-btn" type="button" data-photo-remove="${x.id}">Remove</button>
+              <span class="photo-status" id="ps-${x.id}" role="status"></span>
+            </div>
+          </div>
+        </div>`).join("") : '<div class="field__hint" style="margin:0">No photos yet.</div>';
+    }
+
+    /* Shrink a phone photo to max 1600px on the long side, as a JPEG of roughly 200–400 KB */
+    async function shrinkPhoto(file) {
+      let source;
+      try {
+        source = await createImageBitmap(file, { imageOrientation: "from-image" });
+      } catch (e) {
+        source = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error("That file doesn't look like a photo."));
+          img.src = URL.createObjectURL(file);
+        });
+      }
+      const w = source.width, h = source.height;
+      const scale = Math.min(1, 1600 / Math.max(w, h));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.8));
+      if (!blob) throw new Error("Couldn't prepare that photo.");
+      return blob;
+    }
+
+    async function addPhoto(spotId, file) {
+      const blob = await shrinkPhoto(file);
+      const path = `spot-${spotId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const up = await db.storage.from(PHOTO_BUCKET).upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
+      if (up.error) throw up.error;
+      const order = Math.max(0, ...spotPhotos(spotId).map(x => x.sort_order)) + 1;
+      const { data, error } = await db.from("parking_photos")
+        .insert({ parking_location_id: spotId, file_path: path, sort_order: order }).select().single();
+      if (error) {
+        await db.storage.from(PHOTO_BUCKET).remove([path]);
+        throw error;
+      }
+      photos.push(data);
+    }
+
+    async function removePhoto(id) {
+      const x = photos.find(p => p.id === id);
+      const { error } = await db.from("parking_photos").delete().eq("id", id);
+      if (error) throw error;
+      await db.storage.from(PHOTO_BUCKET).remove([x.file_path]);
+      photos = photos.filter(p => p.id !== id);
+    }
+
+    async function movePhoto(id, step) {
+      const x = photos.find(p => p.id === id);
+      const items = spotPhotos(x.parking_location_id);
+      const from = items.indexOf(x), to = from + step;
+      if (to < 0 || to >= items.length) return;
+      items.splice(to, 0, items.splice(from, 1)[0]);
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].sort_order !== i + 1) {
+          const { error } = await db.from("parking_photos").update({ sort_order: i + 1 }).eq("id", items[i].id);
+          if (error) throw error;
+          items[i].sort_order = i + 1;
+        }
+      }
+    }
+
+    function photoError(error) {
+      const msg = friendlyError(error);
+      if (/bucket|not found|parking_photos/i.test(msg)) return "Photos aren't switched on yet – run 07_photos.sql in Supabase first.";
+      if (/size|too large|exceeded/i.test(msg)) return "That photo is too big.";
+      return msg;
+    }
+
+    $("editView").addEventListener("change", async event => {
+      const spotId = editing && editing.table === "parking_locations" ? editing.id : null;
+      if (!spotId) return;
+
+      if (event.target.id === "photoInput") {
+        const file = event.target.files && event.target.files[0];
+        event.target.value = "";
+        if (!file) return;
+        $("formError").textContent = "";
+        $("addPhotoText").textContent = "Uploading…";
+        try {
+          await addPhoto(spotId, file);
+          renderPhotoList(spotId);
+        } catch (error) {
+          $("formError").textContent = photoError(error);
+        }
+        $("addPhotoText").textContent = "Add photo";
+      }
+
+      const captionId = Number(event.target.dataset.caption);
+      if (captionId) {
+        const caption = blankToNull(event.target.value);
+        const status = $(`ps-${captionId}`);
+        const { error } = await db.from("parking_photos").update({ caption }).eq("id", captionId);
+        if (error) { status.textContent = photoError(error); return; }
+        photos.find(p => p.id === captionId).caption = caption;
+        status.textContent = "Caption saved";
+        setTimeout(() => { status.textContent = ""; }, 2500);
+      }
+    });
+
+    $("editView").addEventListener("click", async event => {
+      const spotId = editing && editing.table === "parking_locations" ? editing.id : null;
+      const move = event.target.closest("[data-photo-move]");
+      const remove = event.target.closest("[data-photo-remove]");
+      if (!spotId || (!move && !remove)) return;
+      $("formError").textContent = "";
+      try {
+        if (move) {
+          await movePhoto(Number(move.dataset.id), Number(move.dataset.photoMove));
+          renderPhotoList(spotId);
+        } else if (remove.dataset.confirm !== "yes") {
+          // First tap asks; second tap removes
+          remove.dataset.confirm = "yes";
+          remove.textContent = "Tap again to remove";
+          setTimeout(() => { if (remove.isConnected) { remove.dataset.confirm = ""; remove.textContent = "Remove"; } }, 4000);
+        } else {
+          remove.textContent = "Removing…";
+          await removePhoto(Number(remove.dataset.photoRemove));
+          renderPhotoList(spotId);
+        }
+      } catch (error) {
+        $("formError").textContent = photoError(error);
+      }
+    });
+
     /* ---------- Edit forms ---------- */
 
     function hospitalOptions(selected) {
@@ -806,6 +981,15 @@
           <div class="field__hint">Use | to start a new line. Start with **WARNING** for the amber box.</div></div>
         <div class="field"><label for="f-approach">Preferred approach (optional)</label>
           <input id="f-approach" name="preferred_approach" value="${escapeHtml(p ? p.preferred_approach : "")}" placeholder="e.g. From the A13 or A127"></div>
+        <div class="field">
+          <span class="label">Photos</span>
+          ${p ? `
+            <div id="photoList" class="photo-list"></div>
+            <label class="btn btn--secondary add-photo" for="photoInput">${CAMERA_ICON}<span id="addPhotoText">Add photo</span></label>
+            <input id="photoInput" type="file" accept="image/*" hidden>
+            <div class="field__hint">Photos save straight away – no need to press Save. Crews see them on every ward that parks here. Avoid people's faces and number plates.</div>`
+          : `<div class="field__hint">Save this parking spot first, then open it again to add photos.</div>`}
+        </div>
         ${activeField(p, "Available to use")}
         ${formButtons}`;
     }
@@ -833,6 +1017,7 @@
       } else if (tab === "parking") {
         const p = id ? parking.find(x => x.id === id) : null;
         form.innerHTML = parkingForm(p, prefill); editing = { table: "parking_locations", id };
+        if (p) renderPhotoList(p.id);
       } else {
         const h = id ? hospitals.find(x => x.id === id) : null;
         form.innerHTML = hospitalForm(h); editing = { table: "hospitals", id };

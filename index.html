@@ -32,6 +32,32 @@
     .dialog form { display: grid; gap: var(--space-4); }
     .dialog h2 { margin: 0; }
     [hidden] { display: none !important; }
+
+    /* Full-screen photo viewer: always dark, like a phone's own photo viewer */
+    .photo-viewer {
+      width: 100vw; height: 100dvh; max-width: none; max-height: none;
+      margin: 0; padding: 0; border: 0; background: #000; color: #fff;
+    }
+    .photo-viewer[open] { display: flex; flex-direction: column; }
+    .photo-viewer::backdrop { background: #000; }
+    .pv-top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-3) var(--space-2);
+    }
+    .pv-count { font-weight: 600; font-size: var(--text-sm); }
+    .pv-stage { flex: 1; min-height: 0; display: grid; place-items: center; touch-action: pan-y pinch-zoom; }
+    .pv-stage img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+    .pv-caption { margin: 0; padding: var(--space-3) var(--space-4) 0; text-align: center; font-size: var(--text-md); min-height: 1.5em; }
+    .pv-nav { display: flex; justify-content: space-between; gap: var(--space-3);
+      padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom)); }
+    .pv-btn {
+      min-height: 48px; min-width: 48px; padding: 0 var(--space-4);
+      background: rgb(255 255 255 / .16); color: #fff; border: 0; border-radius: 999px;
+      font: inherit; font-weight: 700; cursor: pointer;
+    }
+    .pv-btn:hover { background: rgb(255 255 255 / .26); }
+    .pv-btn:disabled { visibility: hidden; }
+    .pv-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -80,6 +106,20 @@
   </main>
 
   <div id="toast" class="toast" role="status" hidden></div>
+
+  <!-- ============ PHOTO VIEWER ============ -->
+  <dialog id="photoViewer" class="photo-viewer" aria-label="Parking photos">
+    <div class="pv-top">
+      <span id="pvCount" class="pv-count"></span>
+      <button id="pvClose" class="pv-btn" type="button" aria-label="Close photos">✕</button>
+    </div>
+    <div id="pvStage" class="pv-stage"><img id="pvImg" alt=""></div>
+    <p id="pvCaption" class="pv-caption"></p>
+    <div class="pv-nav">
+      <button id="pvPrev" class="pv-btn" type="button">‹ Previous</button>
+      <button id="pvNext" class="pv-btn" type="button">Next ›</button>
+    </div>
+  </dialog>
 
   <!-- ============ SUGGESTION FORM ============ -->
   <dialog id="suggestDialog" class="dialog" aria-labelledby="suggestTitle">
@@ -330,6 +370,12 @@
       '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
       '<path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
 
+    /* Camera: "photos of the parking spot" */
+    const CAMERA_ICON =
+      '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>';
+
     /* Small floor-plan icon shown on diagram buttons */
     const FLOORPLAN_ICON =
       '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" ' +
@@ -362,6 +408,12 @@
       `).join("");
     }
 
+    function photoButton(item) {
+      const n = item.photos.length;
+      if (!n || !item.coordinates) return "";
+      return `<button type="button" class="btn btn--ghost" data-photos="${item.id}">${CAMERA_ICON}Photos (${n})</button>`;
+    }
+
     function cardHtml(item) {
       const hasParking = item.coordinates !== null;
       const isWarning = hasParking && WARNING.test(item.driverNotes);
@@ -391,7 +443,7 @@
           ${isWarning ? `<div style="margin-bottom: var(--space-3)">${driverNotesHtml(item.driverNotes)}</div>` : ""}
           ${hasParking ? "" : '<p class="text-warn small"><strong>Parking location not yet available</strong></p>'}
           ${parkingActions ? `<div class="card__actions" style="margin-bottom: var(--space-2)">${parkingActions}</div>` : ""}
-          <div class="card__actions">${diagramButtons(item.diagrams)}</div>
+          <div class="card__actions">${photoButton(item)}${diagramButtons(item.diagrams)}</div>
         </article>`;
     }
 
@@ -526,7 +578,8 @@
           coordinates: row.latitude != null && row.longitude != null
             ? { latitude: Number(row.latitude), longitude: Number(row.longitude) }
             : null,
-          diagrams: Array.isArray(row.diagrams) ? row.diagrams : []
+          diagrams: Array.isArray(row.diagrams) ? row.diagrams : [],
+          photos: Array.isArray(row.photos) ? row.photos : []
         }));
         wardsById = new Map(wardsData.map(item => [item.id, item]));
 
@@ -597,6 +650,70 @@
     });
 
     document.getElementById("missingButton").addEventListener("click", () => openSuggest(null));
+    /* ---------- Photo viewer ---------- */
+
+    const viewer = document.getElementById("photoViewer");
+    const pvImg = document.getElementById("pvImg");
+    let viewerPhotos = [], viewerIndex = 0, viewerTitle = "";
+
+    const photoUrl = path => `${SUPABASE_URL}/storage/v1/object/public/parking-photos/${path.split("/").map(encodeURIComponent).join("/")}`;
+
+    function showPhoto(i) {
+      viewerIndex = Math.max(0, Math.min(i, viewerPhotos.length - 1));
+      const photo = viewerPhotos[viewerIndex];
+      pvImg.src = photoUrl(photo.path);
+      pvImg.alt = photo.caption || `Photo ${viewerIndex + 1} of ${viewerTitle}`;
+      document.getElementById("pvCaption").textContent = photo.caption || "";
+      document.getElementById("pvCount").textContent =
+        viewerPhotos.length > 1 ? `${viewerIndex + 1} of ${viewerPhotos.length}` : viewerTitle;
+      document.getElementById("pvPrev").disabled = viewerIndex === 0;
+      document.getElementById("pvNext").disabled = viewerIndex === viewerPhotos.length - 1;
+      const next = viewerPhotos[viewerIndex + 1];
+      if (next) new Image().src = photoUrl(next.path);      // load the next one early
+    }
+
+    function openPhotos(item) {
+      viewerPhotos = item.photos;
+      viewerTitle = item.parkingLocation || item.ward;
+      showPhoto(0);
+      logUsage({ kind: "photo", ward_id: item.id, hospital_id: item.hospitalId });
+      history.pushState({ photoViewer: true }, "");          // so the phone's Back button closes it
+      if (viewer.showModal) viewer.showModal(); else viewer.setAttribute("open", "");
+    }
+
+    function closePhotos() {
+      if (history.state && history.state.photoViewer) history.back();   // popstate closes it
+      else if (viewer.open) viewer.close();
+    }
+
+    window.addEventListener("popstate", () => { if (viewer.open) viewer.close(); });
+    viewer.addEventListener("cancel", event => { event.preventDefault(); closePhotos(); });
+    document.getElementById("pvClose").addEventListener("click", closePhotos);
+    document.getElementById("pvPrev").addEventListener("click", () => showPhoto(viewerIndex - 1));
+    document.getElementById("pvNext").addEventListener("click", () => showPhoto(viewerIndex + 1));
+    viewer.addEventListener("keydown", event => {
+      if (event.key === "ArrowLeft") showPhoto(viewerIndex - 1);
+      if (event.key === "ArrowRight") showPhoto(viewerIndex + 1);
+    });
+
+    // Swipe left / right (ignored while zoomed in)
+    let swipeX = null;
+    const stage = document.getElementById("pvStage");
+    stage.addEventListener("pointerdown", event => { swipeX = event.clientX; });
+    stage.addEventListener("pointerup", event => {
+      if (swipeX === null) return;
+      const dx = event.clientX - swipeX;
+      swipeX = null;
+      if (window.visualViewport && window.visualViewport.scale > 1.05) return;
+      if (Math.abs(dx) > 50) showPhoto(viewerIndex + (dx < 0 ? 1 : -1));
+    });
+    stage.addEventListener("pointercancel", () => { swipeX = null; });
+
+    resultsElement.addEventListener("click", event => {
+      const button = event.target.closest("[data-photos]");
+      if (button) openPhotos(wardsById.get(Number(button.dataset.photos)));
+    });
+
     document.getElementById("showAllButton").addEventListener("click", () => {
       leaveSharedWard();
       renderResults();
