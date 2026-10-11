@@ -336,7 +336,7 @@
       if (error) {
         const missing = /usage_summary|function|schema cache/i.test(error.message || "");
         $("usageBody").innerHTML = `<div class="alert alert--warn">${missing
-          ? "The usage report isn't switched on yet. Run <strong>05_usage_details.sql</strong> in Supabase's SQL Editor, then come back here."
+          ? "The usage report isn't switched on yet. Run <strong>06_share_links.sql</strong> in Supabase's SQL Editor, then come back here."
           : escapeHtml(friendlyError(error))}</div>`;
         return;
       }
@@ -425,8 +425,9 @@
           <div class="tile"><div class="tile__value">${fmt(t.navigate)}</div><div class="tile__label">Navigate taps</div></div>
           <div class="tile"><div class="tile__value">${fmt(t.map)}</div><div class="tile__label">Map taps</div></div>
         </div>
-        <p class="usage-also">Also ${plural(t.diagram, "hospital diagram")} opened, ${plural(t.call, "phone number")} tapped
-          and the feedback form opened ${plural(t.feedback, "time")}.
+        <p class="usage-also">Also ${plural(t.diagram, "hospital diagram")} opened, ${plural(t.call, "phone number")} tapped,
+          the feedback form opened ${plural(t.feedback, "time")},
+          ${plural(t.share, "ward link")} shared and ${plural(t.shared_open, "shared link")} opened.
           Phones are counted anonymously – the app never knows who is using it.</p>
 
         ${nothingYet ? '<div class="empty">No use recorded in this period yet.</div>' : `

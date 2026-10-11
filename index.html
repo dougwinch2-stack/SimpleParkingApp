@@ -14,13 +14,21 @@
     /* Small text-style button for "Suggest a change" (colours from dougs.css) */
     /* Feedback bubble in the card's top-right corner – adds no height to the card */
     .card { position: relative; }
-    .card__title { padding-right: 2.25rem; }
-    .suggest-link {
-      position: absolute; top: var(--space-2); right: var(--space-2);
+    .card__title { padding-right: 5.25rem; }
+    .card__eyebrow { padding-right: 5.25rem; }
+    .card__corner { position: absolute; top: var(--space-2); right: var(--space-2); display: flex; }
+    .corner-btn {
       width: 44px; height: 44px; display: grid; place-items: center;
       background: none; border: 0; border-radius: 50%; color: var(--text-muted); cursor: pointer;
     }
-    .suggest-link:hover { background: var(--surface-2); color: var(--brand-text); }
+    .corner-btn:hover { background: var(--surface-2); color: var(--brand-text); }
+    .shared-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+    .toast {
+      position: fixed; left: 50%; bottom: calc(var(--space-5, 1.5rem) + env(safe-area-inset-bottom));
+      transform: translateX(-50%); z-index: 50;
+      background: var(--text); color: var(--bg); padding: var(--space-2) var(--space-4);
+      border-radius: 999px; font-size: var(--text-sm); font-weight: 600; box-shadow: 0 4px 14px rgb(0 0 0 / .25);
+    }
     .dialog form { display: grid; gap: var(--space-4); }
     .dialog h2 { margin: 0; }
     [hidden] { display: none !important; }
@@ -55,6 +63,11 @@
 
     <p id="summary" class="status-line" role="status">Loading…</p>
 
+    <div id="sharedBar" class="shared-bar" hidden>
+      <span class="status-line" style="margin: 0">Ward shared with you</span>
+      <button id="showAllButton" class="btn btn--secondary" type="button">Show all wards</button>
+    </div>
+
     <section id="results" class="stack" aria-live="polite">
       <div class="skeleton" style="height: 9rem"></div>
       <div class="skeleton" style="height: 9rem"></div>
@@ -65,6 +78,8 @@
     </button>
 
   </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
 
   <!-- ============ SUGGESTION FORM ============ -->
   <dialog id="suggestDialog" class="dialog" aria-labelledby="suggestTitle">
@@ -308,6 +323,13 @@
       'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
       '<path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/><path d="M12 8v4"/><path d="M12 15.5h.01"/></svg>';
 
+    /* Share: three joined dots (the usual "share" symbol) */
+    const SHARE_ICON =
+      '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
+      '<path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
+
     /* Small floor-plan icon shown on diagram buttons */
     const FLOORPLAN_ICON =
       '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" ' +
@@ -359,7 +381,10 @@
 
       return `
         <article class="card ${hasParking ? (isWarning ? "card--warn" : "") : "card--plain"}" data-ward="${item.id}">
-          <button type="button" class="suggest-link" data-suggest="${item.id}" aria-label="Suggest a change to ${escapeHtml(item.ward)}" title="Suggest a change">${FEEDBACK_ICON}</button>
+          <div class="card__corner">
+            <button type="button" class="corner-btn" data-share="${item.id}" aria-label="Share a link to ${escapeHtml(item.ward)}" title="Share">${SHARE_ICON}</button>
+            <button type="button" class="corner-btn suggest-link" data-suggest="${item.id}" aria-label="Suggest a change to ${escapeHtml(item.ward)}" title="Suggest a change">${FEEDBACK_ICON}</button>
+          </div>
           <div class="card__eyebrow">${escapeHtml(item.hospital)}</div>
           <h2 class="card__title">${escapeHtml(item.ward)}</h2>
           <dl class="card__body">${details}</dl>
@@ -370,7 +395,61 @@
         </article>`;
     }
 
+    /* ---------- Shared ward links: index.html?ward=123 ---------- */
+
+    let sharedWardId = Number(new URLSearchParams(location.search).get("ward")) || null;
+
+    function wardLink(id) {
+      return `${location.origin}${location.pathname}?ward=${id}`;
+    }
+
+    function leaveSharedWard() {
+      if (!sharedWardId) return;
+      sharedWardId = null;
+      document.getElementById("sharedBar").hidden = true;
+      history.replaceState(null, "", location.pathname);
+    }
+
+    let toastTimer = null;
+    function showToast(text) {
+      const toast = document.getElementById("toast");
+      toast.textContent = text;
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 2500);
+    }
+
+    async function shareWard(item) {
+      const url = wardLink(item.id);
+      logUsage({ kind: "share", ward_id: item.id, hospital_id: item.hospitalId });
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: `${item.ward} – ${item.hospital}`, text: `${item.ward} – ${item.hospital}: parking and directions`, url });
+        } catch (e) { /* closed the share menu – nothing to do */ }
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast("Link copied – paste it into a message");
+      } catch (e) {
+        window.prompt("Copy this link:", url);
+      }
+    }
+
     function renderResults() {
+      if (sharedWardId) {
+        const item = wardsById.get(sharedWardId);
+        if (item) {
+          summaryElement.hidden = true;
+          document.getElementById("sharedBar").hidden = false;
+          resultsElement.innerHTML = cardHtml(item);
+          return 1;
+        }
+        leaveSharedWard();
+        showToast("That shared ward is no longer listed");
+      }
+
+      summaryElement.hidden = false;
       const selectedHospital = hospitalFilter.value;
       const search = searchInput.value.trim().toLowerCase();
 
@@ -453,12 +532,16 @@
 
         populateHospitals();
 
-        hospitalFilter.addEventListener("change", () => scheduleSearchLog(renderResults()));
-        searchInput.addEventListener("input", () => scheduleSearchLog(renderResults()));
+        hospitalFilter.addEventListener("change", () => { leaveSharedWard(); scheduleSearchLog(renderResults()); });
+        searchInput.addEventListener("input", () => { leaveSharedWard(); scheduleSearchLog(renderResults()); });
 
         renderResults();
         document.getElementById("missingButton").hidden = false;
         logUsage({ kind: "open" });
+        if (sharedWardId && wardsById.has(sharedWardId)) {
+          const shared = wardsById.get(sharedWardId);
+          logUsage({ kind: "shared_open", ward_id: shared.id, hospital_id: shared.hospitalId });
+        }
       } catch (error) {
         console.error(error);
         showError("The database may be waking up or unreachable. Wait a moment and refresh. " +
@@ -514,6 +597,15 @@
     });
 
     document.getElementById("missingButton").addEventListener("click", () => openSuggest(null));
+    document.getElementById("showAllButton").addEventListener("click", () => {
+      leaveSharedWard();
+      renderResults();
+      searchInput.focus();
+    });
+    resultsElement.addEventListener("click", event => {
+      const button = event.target.closest("[data-share]");
+      if (button) shareWard(wardsById.get(Number(button.dataset.share)));
+    });
     suggestForm.addEventListener("input", () => { document.getElementById("suggestError").textContent = ""; });
     dialog.addEventListener("click", event => {
       if (event.target.closest("[data-close]")) closeSuggest();
