@@ -51,11 +51,10 @@
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
       user-select: none; -webkit-user-drag: none;
     }
-    .pv-caption {
-      margin: 0; padding: var(--space-3) var(--space-4) 0; background: #000;
-      text-align: center; font-size: var(--text-md); font-weight: 600; line-height: 1.4;
-    }
-    .pv-caption:empty { display: none; }
+    /* The note uses the same info box as the rest of the app (dougs.css .alert) */
+    .pv-note { padding: var(--space-3) var(--space-3) 0; }
+    .pv-note .alert { margin: 0; font-size: var(--text-md); }
+    .pv-note[hidden] { display: none; }
     .pv-nav { display: flex; justify-content: space-between; gap: var(--space-3);
       padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom)); }
     .pv-btn {
@@ -122,7 +121,9 @@
       <button id="pvClose" class="pv-btn" type="button" aria-label="Close photos">✕</button>
     </div>
     <div id="pvStage" class="pv-stage"><img id="pvImg" alt=""></div>
-    <p id="pvCaption" class="pv-caption"></p>
+    <div id="pvNote" class="pv-note" hidden>
+      <div class="alert alert--info"><strong>Note</strong><span id="pvCaption"></span></div>
+    </div>
     <div class="pv-nav">
       <button id="pvPrev" class="pv-btn" type="button">‹ Previous</button>
       <button id="pvNext" class="pv-btn" type="button">Next ›</button>
@@ -672,6 +673,7 @@
       pvImg.src = photoUrl(photo.path);
       pvImg.alt = photo.caption || `Photo ${viewerIndex + 1} of ${viewerTitle}`;
       document.getElementById("pvCaption").textContent = photo.caption || "";
+      document.getElementById("pvNote").hidden = !photo.caption;
       document.getElementById("pvCount").textContent =
         viewerPhotos.length > 1 ? `${viewerIndex + 1} of ${viewerPhotos.length}` : viewerTitle;
       document.getElementById("pvPrev").disabled = viewerIndex === 0;
