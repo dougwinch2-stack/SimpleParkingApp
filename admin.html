@@ -292,7 +292,7 @@
       const used = p ? wards.filter(w => w.parking_location_id === p.id).length : 0;
       return `
         <h2>${p ? "Edit parking spot" : "Add parking spot"}</h2>
-        ${p ? `<p class="status-line">Used by ${used} ward${used === 1 ? "" : "s"}. Renaming is safe – wards are linked by ID.</p>` : ""}
+        ${p ? `<p class="status-line">Used by ${used} ward${used === 1 ? "" : "s"}. Renaming is safe – the wards using it update automatically.</p>` : ""}
         <div class="field"><label for="f-hospital">Hospital</label>
           <select id="f-hospital" name="hospital_id" ${p && used ? "disabled" : ""}>${hospitalOptions(hospitalId)}</select></div>
         <div class="field"><label for="f-name">Name</label>
