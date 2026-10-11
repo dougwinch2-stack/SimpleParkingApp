@@ -1,0 +1,7 @@
+id,hospital_id,name,file,sort_order
+1,1,Hospital,map-basildon-main.jpg,0
+2,2,Hospital,map-broomfield-main.jpg,1
+3,3,Hospital,map-southend-main.jpg,2
+4,3,"Ground Floor",map-southend-ground-floor.jpg,3
+5,3,"Floor 1",map-southend-floor1.jpg,4
+6,3,"Floor 2",map-southend-floor2.jpg,5
