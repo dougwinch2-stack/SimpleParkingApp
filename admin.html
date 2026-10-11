@@ -6,6 +6,10 @@
   <meta name="theme-color" content="#0b4f6c">
   <meta name="robots" content="noindex">
   <title>Admin · Doug's Parking App</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Doug's Parking App">
   <link rel="stylesheet" href="dougs.css">
   <script src="dougs.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -37,13 +41,12 @@
     }
     .sugg-finish { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
     .btn--sm { min-height: 40px; padding: var(--space-1) var(--space-4); font-size: var(--text-sm); }
-    /* Tabs: one row on wide screens; on phones Suggestions gets a row of its own.
+    /* Tabs: one row on wide screens; three rows of two on phones.
        The 1px gap shows the background through, which draws the dividing lines. */
     #tabs { gap: 1px; background: var(--border-strong); }
     #tabs button { border-left: 0; }
     @media (max-width: 600px) {
       #tabs { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
-      #tabs button:first-child { grid-column: 1 / -1; }
     }
 
     /* ---- Parking photos ---- */
@@ -57,6 +60,15 @@
     .photo-tools { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); align-items: center; }
     .photo-status { color: var(--text-muted); font-size: var(--text-xs); }
     .add-photo { display: inline-flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+
+    /* ---- Data checks ---- */
+    #checksView, #usageView, #listView { min-width: 0; }
+    .dq { min-width: 0; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); }
+    .dq__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+    .dq__head h3 { margin: 0; font-size: var(--text-md); }
+    .dq__why { color: var(--text-muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
+    .dq .admin-list { margin-top: var(--space-3); }
+    .dq .badge { flex: none; }
 
     /* ---- Usage report ---- */
     .tile__sub { color: var(--text-muted); font-size: var(--text-xs); margin-top: 2px; }
@@ -126,6 +138,7 @@
           <button type="button" data-tab="parking">Parking</button>
           <button type="button" data-tab="hospitals">Hospitals</button>
           <button type="button" data-tab="usage">Usage</button>
+          <button type="button" data-tab="checks" id="checksTab">Checks</button>
         </div>
         <button id="signOutButton" class="btn btn--ghost" type="button">Sign out</button>
       </div>
@@ -162,6 +175,9 @@
         <div id="usageBody" class="stack"></div>
       </div>
 
+      <!-- Data checks -->
+      <div id="checksView" class="stack" hidden></div>
+
       <!-- Edit form (built per item) -->
       <form id="editView" class="form-panel" hidden novalidate></form>
     </section>
@@ -179,7 +195,7 @@
     const $ = id => document.getElementById(id);
     let db = null;
     let tab = "suggestions";
-    let hospitals = [], parking = [], wards = [], suggestions = [], photos = [];
+    let hospitals = [], parking = [], wards = [], suggestions = [], photos = [], diagrams = [];
     const PHOTO_BUCKET = "parking-photos";
     let showFinished = false;
 
@@ -224,22 +240,26 @@
     /* ---------- Data ---------- */
 
     async function loadAll() {
-      const [h, p, w, s, ph] = await Promise.all([
+      const [h, p, w, s, ph, dg] = await Promise.all([
         db.from("hospitals").select("*").order("name"),
         db.from("parking_locations").select("*").order("name"),
         db.from("wards").select("*").order("name"),
         db.from("suggestions").select("*").order("created_at", { ascending: false }).limit(300),
-        db.from("parking_photos").select("*").order("sort_order")
+        db.from("parking_photos").select("*").order("sort_order"),
+        db.from("diagrams").select("id, hospital_id")
       ]);
       for (const r of [h, p, w, s]) if (r.error) throw r.error;
       hospitals = h.data; parking = p.data; wards = w.data; suggestions = s.data;
       photos = ph.error ? [] : ph.data;      // empty until 07_photos.sql has been run
+      diagrams = dg.error ? [] : dg.data;
+      updateChecksCount();
       updateSuggestionCount();
     }
 
     function updateSuggestionCount() {
       const n = suggestions.filter(x => x.status === "Pending").length;
       $("suggestionsTab").textContent = n ? `Suggestions (${n})` : "Suggestions";
+      if (typeof updateChecksCount === "function" && hospitals.length) updateChecksCount();
     }
 
     async function save(table, id, row) {
@@ -315,20 +335,153 @@
     }
 
     function setTab(next) {
-      cameFromSuggestions = false;
+      returnTo = null;
       tab = next;
       document.querySelectorAll("#tabs button").forEach(b =>
         b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
       $("listSearch").value = "";
-      if (tab === "usage") showUsage(); else showList();
+      if (tab === "usage") showUsage();
+      else if (tab === "checks") showChecks();
+      else showList();
     }
 
     function showList() {
       $("editView").hidden = true;
       $("usageView").hidden = true;
+      $("checksView").hidden = true;
       $("listView").hidden = false;
       renderList();
     }
+
+    /* ---------- Data checks ----------
+       Each check lists the items that need a look. "important" ones are counted on the tab. */
+
+    let noResultSearches = [];      // filled from the usage report when Checks is opened
+
+    function buildChecks() {
+      const activeHospital = id => (hospitals.find(h => h.id === id) || {}).active;
+      const spot = id => parking.find(p => p.id === id);
+      const shownWards = wards.filter(w => w.active && activeHospital(w.hospital_id));
+      const usedSpots = parking.filter(p => p.active && shownWards.some(w => w.parking_location_id === p.id));
+      const weekAgo = Date.now() - 7 * 86400000;
+      const wardRow = w => ({ tab: "wards", id: w.id, title: w.name, sub: hospitalName(w.hospital_id) });
+      const spotRow = p => ({ tab: "parking", id: p.id, title: p.name, sub: hospitalName(p.hospital_id) });
+
+      return [
+        {
+          important: true,
+          title: "Wards with no parking shown",
+          why: "Crews see “Parking location not yet available”. Either no spot is set, or the spot is hidden.",
+          items: shownWards.filter(w => !w.parking_location_id || !(spot(w.parking_location_id) || {}).active).map(wardRow)
+        },
+        {
+          important: true,
+          title: "Suggestions waiting over a week",
+          why: "Crew suggestions not yet marked Done or Dismissed.",
+          items: suggestions.filter(x => x.status === "Pending" && new Date(x.created_at).getTime() < weekAgo)
+            .map(x => ({ tab: "suggestions", id: x.id, title: x.kind, sub: `${formatWhen(x.created_at)} · ${String(x.message || "").slice(0, 60)}` }))
+        },
+        {
+          important: true,
+          title: "Searches that keep finding nothing",
+          why: "Searched 3 or more times in the last 30 days with no results – a missing ward, or a name crews use.",
+          items: noResultSearches.filter(r => r.times >= 3)
+            .map(r => ({ title: `“${r.text}”`, sub: `${r.times} times · last ${formatWhen(r.last_time)}` }))
+        },
+        {
+          title: "Parking spots with no photos",
+          why: "Spots crews use that don't have a photo yet.",
+          items: usedSpots.filter(p => !photos.some(x => x.parking_location_id === p.id)).map(spotRow)
+        },
+        {
+          title: "Parking spots with no driver notes",
+          why: "Spots crews use with no notes on where exactly to stop.",
+          items: usedSpots.filter(p => !p.driver_notes).map(spotRow)
+        },
+        {
+          title: "Parking spots no ward uses",
+          why: "Shown spots that no ward points to. Link them to a ward, or hide them.",
+          items: parking.filter(p => p.active && !shownWards.some(w => w.parking_location_id === p.id)).map(spotRow)
+        },
+        {
+          title: "Hospitals with no diagram",
+          why: "Crews see “No diagram” on every ward at these hospitals.",
+          items: hospitals.filter(h => h.active && !diagrams.some(d => d.hospital_id === h.id))
+            .map(h => ({ tab: "hospitals", id: h.id, title: h.name, sub: "Diagrams are added outside admin for now" }))
+        }
+      ];
+    }
+
+    function updateChecksCount() {
+      const n = buildChecks().filter(c => c.important && c.items.length).length;
+      $("checksTab").textContent = n ? `Checks (${n})` : "Checks";
+    }
+
+    const expandedChecks = new Set();
+
+    function renderChecks() {
+      const checks = buildChecks();
+      updateChecksCount();
+      $("checksView").innerHTML = `
+        <p class="status-line" style="margin:0">Things worth a look. The first three matter most and are counted on the tab.</p>
+        ${checks.map((c, i) => {
+          const n = c.items.length;
+          const badge = !n ? '<span class="badge badge--ok">All good</span>'
+            : `<span class="badge ${c.important ? "badge--warn" : "badge--neutral"}">${n}</span>`;
+          const showAll = expandedChecks.has(i);
+          const shown = showAll ? c.items : c.items.slice(0, 5);
+          return `
+            <section class="dq">
+              <div class="dq__head"><h3>${escapeHtml(c.title)}</h3>${badge}</div>
+              <p class="dq__why">${escapeHtml(c.why)}</p>
+              ${n ? `<div class="admin-list">${shown.map(it => it.tab ? `
+                <button type="button" class="admin-row" data-check-tab="${it.tab}" data-id="${it.id}">
+                  <span class="admin-row__main"><span class="admin-row__title">${escapeHtml(it.title)}</span>
+                    <div class="admin-row__sub">${escapeHtml(it.sub)}</div></span>
+                  <span class="admin-row__chev" aria-hidden="true">›</span>
+                </button>` : `
+                <div class="admin-row" style="cursor:default">
+                  <span class="admin-row__main"><span class="admin-row__title">${escapeHtml(it.title)}</span>
+                    <div class="admin-row__sub">${escapeHtml(it.sub)}</div></span>
+                </div>`).join("")}</div>
+                ${n > 5 ? `<button class="link-btn" type="button" data-check-more="${i}">${showAll ? "Show fewer" : `Show all ${n}`}</button>` : ""}` : ""}
+            </section>`;
+        }).join("")}`;
+    }
+
+    async function showChecks() {
+      $("editView").hidden = true;
+      $("listView").hidden = true;
+      $("usageView").hidden = true;
+      $("checksView").hidden = false;
+      renderChecks();
+      await loadNoResultSearches();
+    }
+
+    /* The "found nothing" searches come from the usage report */
+    async function loadNoResultSearches() {
+      const { data, error } = await db.rpc("usage_summary", { days: 30 });
+      if (error || !data) return;
+      const summary = typeof data === "string" ? JSON.parse(data) : data;
+      noResultSearches = summary.no_results || [];
+      updateChecksCount();
+      if (tab === "checks" && !$("checksView").hidden) renderChecks();
+    }
+
+    $("checksView").addEventListener("click", event => {
+      const more = event.target.closest("[data-check-more]");
+      if (more) {
+        const i = Number(more.dataset.checkMore);
+        if (expandedChecks.has(i)) expandedChecks.delete(i); else expandedChecks.add(i);
+        renderChecks();
+        return;
+      }
+      const row = event.target.closest("[data-check-tab]");
+      if (!row) return;
+      const target = row.dataset.checkTab, id = Number(row.dataset.id);
+      if (target === "suggestions") { setTab("suggestions"); return; }
+      openFrom(target, id, {}, "checks");
+    });
 
     /* ---------- Usage report ---------- */
 
@@ -341,6 +494,7 @@
     function showUsage() {
       $("editView").hidden = true;
       $("listView").hidden = true;
+      $("checksView").hidden = true;
       $("usageView").hidden = false;
       loadUsage();
     }
@@ -712,8 +866,8 @@
       renderList();
     }
 
-    function openFrom(targetTab, id, prefill) {
-      cameFromSuggestions = true;
+    function openFrom(targetTab, id, prefill, from = "suggestions") {
+      returnTo = from;
       tab = targetTab;
       document.querySelectorAll("#tabs button").forEach(b =>
         b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
@@ -932,7 +1086,7 @@
 
     function activeField(item, label) {
       return `
-        <label class="check"><input type="checkbox" name="active" ${!item || item.active ? "checked" : ""}> ${label}</label>
+        <label class="dq"><input type="checkbox" name="active" ${!item || item.active ? "checked" : ""}> ${label}</label>
         <div class="field__hint" style="margin-top: calc(-1 * var(--space-3))">Untick to hide it from crews without deleting it.</div>`;
     }
 
@@ -1004,7 +1158,7 @@
     }
 
     let editing = null;   // { table, id }
-    let cameFromSuggestions = false;
+    let returnTo = null;      // tab to go back to after Save / Cancel
 
     function openEditor(id, prefill = {}) {
       const form = $("editView");
@@ -1023,6 +1177,8 @@
         form.innerHTML = hospitalForm(h); editing = { table: "hospitals", id };
       }
       $("listView").hidden = true;
+      $("usageView").hidden = true;
+      $("checksView").hidden = true;
       form.hidden = false;
       showMessage("");
       window.scrollTo(0, 0);
@@ -1072,7 +1228,7 @@
         button.disabled = true; button.textContent = "Saving…";
         await save(editing.table, editing.id, row);
         fillHospitalFilter();
-        if (cameFromSuggestions) setTab("suggestions"); else showList();
+        if (returnTo) setTab(returnTo); else showList();
         showMessage(`Saved “${row.name}”. Crews see the change next time they open the app.`);
       } catch (error) {
         $("formError").textContent = friendlyError(error);
@@ -1085,7 +1241,7 @@
       if (!action) return;
       const coordsInput = $("f-coords");
 
-      if (action.dataset.action === "cancel") { if (cameFromSuggestions) setTab("suggestions"); else showList(); }
+      if (action.dataset.action === "cancel") { if (returnTo) setTab(returnTo); else showList(); }
 
       if (action.dataset.action === "check") {
         const c = parseCoordinates(coordsInput.value);
@@ -1134,6 +1290,7 @@
       $("adminView").hidden = false;
       $("loading").hidden = true;
       setTab(tab);
+      loadNoResultSearches();      // so the Checks count includes them
     }
 
     function showSignIn(errorText = "") {

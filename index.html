@@ -7,6 +7,10 @@
   <meta name="description" content="Find a hospital ward, see the best place to park and start navigation.">
   <title>Doug's Parking App</title>
   <meta name="dougs-admin" content="admin.html">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Doug's Parking App">
   <link rel="stylesheet" href="dougs.css">
   <script src="dougs.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -297,7 +301,21 @@
     let lastLoggedSearch = "";
     let searchTimer = null;
 
+    /* ---------- Recently viewed wards (kept only on this phone) ---------- */
+
+    const RECENT_KEY = "dougs.parking.recent";
+    const RECENT_KINDS = ["map", "navigate", "diagram", "call", "photo", "share", "shared_open"];
+
+    function recentWardIds() {
+      try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (e) { return []; }
+    }
+    function rememberWard(id) {
+      const ids = [id, ...recentWardIds().filter(x => x !== id)].slice(0, 3);
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify(ids)); } catch (e) { /* not remembered */ }
+    }
+
     function logUsage(event) {
+      if (event.ward_id && RECENT_KINDS.includes(event.kind)) rememberWard(event.ward_id);
       if (!db) return;
       db.from("usage_events")
         .insert({
@@ -520,7 +538,19 @@
           [item.ward, item.floor, item.notes].join(" ").toLowerCase().includes(search))
         .sort((a, b) => a.hospital.localeCompare(b.hospital) || a.ward.localeCompare(b.ward));
 
-      summaryElement.textContent = `${matches.length} ${matches.length === 1 ? "result" : "results"}`;
+      // With nothing typed, this phone's last few wards go first
+      let recentCount = 0;
+      if (!search) {
+        const recent = recentWardIds().map(id => matches.find(m => m.id === id)).filter(Boolean);
+        recentCount = recent.length;
+        if (recentCount) {
+          const rest = matches.filter(m => !recent.includes(m));
+          matches.splice(0, matches.length, ...recent, ...rest);
+        }
+      }
+
+      summaryElement.textContent = `${matches.length} ${matches.length === 1 ? "result" : "results"}` +
+        (recentCount ? " · recent first" : "");
 
       resultsElement.innerHTML = matches.length
         ? matches.map(cardHtml).join("")
