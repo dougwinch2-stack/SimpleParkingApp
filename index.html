@@ -183,17 +183,23 @@
     }
 
     /* ---------- Anonymous usage log ----------
-       No personal data: a random ID kept on this device (for rate limiting only),
-       what was searched, how many results, and which buttons were tapped. */
+       No personal data and no locations. Each row has: a random code kept on
+       this device, a random code for this visit, what was searched or tapped,
+       phone/tablet/computer, home-screen icon or browser, light/dark, and
+       seconds since the app was opened. */
+
+    function randomId() {
+      return crypto.randomUUID ? crypto.randomUUID()
+        : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+            (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16));
+    }
 
     const DEVICE_ID = (() => {
       const key = "dougs.device";
       try {
         let id = localStorage.getItem(key);
         if (!id) {
-          id = crypto.randomUUID ? crypto.randomUUID()
-            : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
-                (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16));
+          id = randomId();
           localStorage.setItem(key, id);
         }
         return id;
@@ -202,6 +208,27 @@
       }
     })();
 
+    const DEVICE_TYPE = (() => {
+      const touch = window.matchMedia && matchMedia("(pointer: coarse)").matches;
+      if (!touch) return "computer";
+      return Math.min(screen.width, screen.height) < 600 ? "phone" : "tablet";
+    })();
+
+    const LAUNCHED_FROM =
+      (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone
+        ? "home screen" : "browser";
+
+    function themeNow() {
+      const chosen = document.documentElement.getAttribute("data-theme");
+      if (chosen === "light" || chosen === "dark") return chosen;
+      return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+
+    /* A "visit" starts when the app opens, or when it's come back to after 30+ minutes away */
+    let visitId = randomId();
+    let visitStart = Date.now();
+    let hiddenAt = null;
+
     let lastSearch = "";
     let lastLoggedSearch = "";
     let searchTimer = null;
@@ -209,9 +236,28 @@
     function logUsage(event) {
       if (!db) return;
       db.from("usage_events")
-        .insert({ device_id: DEVICE_ID, ...event })
+        .insert({
+          device_id: DEVICE_ID,
+          visit_id: visitId,
+          device_type: DEVICE_TYPE,
+          launched_from: LAUNCHED_FROM,
+          theme: themeNow(),
+          seconds_in: Math.min(86400, Math.round((Date.now() - visitStart) / 1000)),
+          ...event
+        })
         .then(() => {}, () => {});      // never let logging affect the app
     }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 30 * 60 * 1000 && wardsData.length) {
+        visitId = randomId();
+        visitStart = Date.now();
+        lastLoggedSearch = "";
+        logUsage({ kind: "open" });
+      }
+      hiddenAt = null;
+    });
 
     function selectedHospitalId() {
       return hospitalFilter.value ? Number(hospitalFilter.value) : null;
@@ -412,6 +458,7 @@
 
         renderResults();
         document.getElementById("missingButton").hidden = false;
+        logUsage({ kind: "open" });
       } catch (error) {
         console.error(error);
         showError("The database may be waking up or unreachable. Wait a moment and refresh. " +
@@ -429,6 +476,7 @@
     function openSuggest(ward) {
       suggestWard = ward;
       suggestCoords = null;
+      logUsage({ kind: "feedback", ward_id: ward ? ward.id : null, hospital_id: ward ? ward.hospitalId : selectedHospitalId() });
       suggestForm.reset();
       suggestForm.hidden = false;
       document.getElementById("suggestThanks").hidden = true;
