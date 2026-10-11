@@ -25,7 +25,18 @@
     .admin-row__sub { color: var(--text-muted); font-size: var(--text-sm); }
     .admin-row__chev { color: var(--text-muted); flex: none; }
     [hidden] { display: none !important; }
-    .suggestion-text { white-space: pre-wrap; margin: var(--space-2) 0; }
+    .suggestion-text { white-space: pre-wrap; margin: var(--space-2) 0 var(--space-1); }
+    .sugg-meta { color: var(--text-muted); font-size: var(--text-sm); font-weight: 600; }
+    .sugg-title { font-size: var(--text-md); font-weight: 700; margin: var(--space-1) 0 0; }
+    .sugg-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-4); }
+    .link-btn {
+      display: inline-flex; align-items: center;
+      background: none; border: 0; padding: 0; min-height: 40px;
+      color: var(--brand-text); font: inherit; font-size: var(--text-sm); font-weight: 600;
+      text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+    }
+    .sugg-finish { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+    .btn--sm { min-height: 40px; padding: var(--space-1) var(--space-4); font-size: var(--text-sm); }
     @media (max-width: 480px) {
       #tabs { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
       #tabs button:nth-child(3) { border-left: 0; }
@@ -292,34 +303,29 @@
         const coords = hasCoords ? `${Number(x.suggested_latitude)}, ${Number(x.suggested_longitude)}` : "";
         const about = ward ? `${ward.name} – ${hospitalName(ward.hospital_id)}`
                            : (x.hospital_id ? hospitalName(x.hospital_id) : "Hospital not given");
-        const statusBadge = x.status === "Pending" ? '<span class="badge badge--info">New</span>'
-          : x.status === "Approved" ? '<span class="badge badge--ok">Done</span>'
-          : '<span class="badge badge--neutral">Dismissed</span>';
+        const status = x.status === "Approved" ? " · Done" : x.status === "Rejected" ? " · Dismissed" : "";
 
-        const actions = [
-          ward ? `<button class="btn btn--secondary" type="button" data-s-action="ward" data-id="${x.id}">Open ward</button>` : "",
-          hasCoords && parkingSpot ? `<button class="btn btn--secondary" type="button" data-s-action="parking" data-id="${x.id}">Use location for “${escapeHtml(parkingSpot.name)}”</button>` : "",
-          hasCoords ? `<button class="btn btn--secondary" type="button" data-s-action="newparking" data-id="${x.id}">New parking spot here</button>` : "",
-          x.kind === "Missing ward" ? `<button class="btn btn--secondary" type="button" data-s-action="newward" data-id="${x.id}">Add as new ward</button>` : "",
-          hasCoords ? `<a class="btn btn--ghost" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}" target="_blank" rel="noopener">View location</a>` : ""
+        const links = [
+          ward ? `<button class="link-btn" type="button" data-s-action="ward" data-id="${x.id}">Open ward</button>` : "",
+          x.kind === "Missing ward" ? `<button class="link-btn" type="button" data-s-action="newward" data-id="${x.id}">Add as new ward</button>` : "",
+          hasCoords ? `<a class="link-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}" target="_blank" rel="noopener">View location</a>` : "",
+          hasCoords && parkingSpot ? `<button class="link-btn" type="button" data-s-action="parking" data-id="${x.id}">Use for “${escapeHtml(parkingSpot.name)}”</button>` : "",
+          hasCoords ? `<button class="link-btn" type="button" data-s-action="newparking" data-id="${x.id}">New parking spot here</button>` : ""
         ].join("");
 
         const finish = x.status === "Pending"
-          ? `<button class="btn btn--go" type="button" data-s-action="Approved" data-id="${x.id}">Done</button>
-             <button class="btn btn--ghost" type="button" data-s-action="Rejected" data-id="${x.id}">Dismiss</button>`
-          : `<button class="btn btn--ghost" type="button" data-s-action="Pending" data-id="${x.id}">Move back to new</button>`;
+          ? `<button class="btn btn--ghost btn--sm" type="button" data-s-action="Rejected" data-id="${x.id}">Dismiss</button>
+             <button class="btn btn--go btn--sm" type="button" data-s-action="Approved" data-id="${x.id}">Done</button>`
+          : `<button class="btn btn--ghost btn--sm" type="button" data-s-action="Pending" data-id="${x.id}">Move back to new</button>`;
 
         return `
           <article class="card ${x.status === "Pending" ? "card--info" : "card--plain"}">
-            <div class="row row--between">
-              <span class="badge badge--neutral">${escapeHtml(x.kind)}</span>
-              <span class="status-line" style="margin:0">${statusBadge} ${formatWhen(x.created_at)}</span>
-            </div>
-            <h3 class="card__title" style="margin-top: var(--space-2)">${escapeHtml(about)}</h3>
+            <div class="sugg-meta">${escapeHtml(x.kind)} · ${formatWhen(x.created_at)}${status}</div>
+            <h3 class="sugg-title">${escapeHtml(about)}</h3>
             <p class="suggestion-text">${escapeHtml(x.message)}</p>
-            ${hasCoords ? `<p class="status-line">Location sent: ${escapeHtml(coords)}</p>` : ""}
-            ${actions ? `<div class="card__actions" style="margin-bottom: var(--space-2)">${actions}</div>` : ""}
-            <div class="card__actions">${finish}</div>
+            ${hasCoords ? '<div class="sugg-meta">Location sent with this suggestion</div>' : ""}
+            ${links ? `<div class="sugg-links">${links}</div>` : ""}
+            <div class="sugg-finish">${finish}</div>
           </article>`;
       }).join("") : `<div class="empty">${showFinished ? "No suggestions yet." : "No new suggestions."}</div>`;
     }
