@@ -10,6 +10,21 @@
   <link rel="stylesheet" href="dougs.css">
   <script src="dougs.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <style>
+    /* Small text-style button for "Suggest a change" (colours from dougs.css) */
+    /* Feedback bubble in the card's top-right corner – adds no height to the card */
+    .card { position: relative; }
+    .card__title { padding-right: 2.25rem; }
+    .suggest-link {
+      position: absolute; top: var(--space-2); right: var(--space-2);
+      width: 44px; height: 44px; display: grid; place-items: center;
+      background: none; border: 0; border-radius: 50%; color: var(--text-muted); cursor: pointer;
+    }
+    .suggest-link:hover { background: var(--surface-2); color: var(--brand-text); }
+    .dialog form { display: grid; gap: var(--space-4); }
+    .dialog h2 { margin: 0; }
+    [hidden] { display: none !important; }
+  </style>
 </head>
 <body>
 
@@ -45,7 +60,63 @@
       <div class="skeleton" style="height: 9rem"></div>
     </section>
 
+    <button id="missingButton" class="btn btn--ghost btn--block" type="button" hidden>
+      Can't find a ward? Tell us
+    </button>
+
   </main>
+
+  <!-- ============ SUGGESTION FORM ============ -->
+  <dialog id="suggestDialog" class="dialog" aria-labelledby="suggestTitle">
+    <form id="suggestForm" method="dialog" novalidate>
+      <h2 id="suggestTitle">Suggest a change</h2>
+      <p id="suggestAbout" class="status-line" style="margin: 0"></p>
+
+      <div class="field" id="kindField">
+        <label for="suggestKind">What needs changing?</label>
+        <select id="suggestKind">
+          <option value="Wrong details">Wrong or out-of-date details</option>
+          <option value="Better parking spot">Better place to park</option>
+          <option value="Ward closed or moved">Ward closed or moved</option>
+          <option value="Other">Something else</option>
+        </select>
+      </div>
+
+      <div class="field" id="hospitalField" hidden>
+        <label for="suggestHospital">Hospital</label>
+        <select id="suggestHospital"></select>
+      </div>
+
+      <div class="field" id="wardNameField" hidden>
+        <label for="suggestWardName">Ward or department name</label>
+        <input id="suggestWardName" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="suggestMessage" id="suggestMessageLabel">Details</label>
+        <textarea id="suggestMessage" maxlength="1900"></textarea>
+      </div>
+
+      <div class="field">
+        <button id="suggestLocate" class="btn btn--secondary" type="button">Add my current location</button>
+        <div id="suggestLocationNote" class="field__hint">Handy if you're standing at the best place to park.</div>
+      </div>
+
+      <div id="suggestError" class="field__error" role="alert"></div>
+      <p class="field__hint" style="margin: 0">Anonymous – only Doug sees this. Sign your name in the details if you'd like a thank you.</p>
+
+      <div class="row">
+        <button id="suggestSend" class="btn btn--go" type="submit" value="send">Send</button>
+        <button class="btn btn--ghost" type="button" data-close>Cancel</button>
+      </div>
+    </form>
+
+    <div id="suggestThanks" class="stack" hidden>
+      <h2>Thanks!</h2>
+      <p>Doug will check it and update the app.</p>
+      <button class="btn btn--primary" type="button" data-close>Close</button>
+    </div>
+  </dialog>
 
   <script>
     /* =================================================================
@@ -185,6 +256,12 @@
       return `<div><dt>Driver notes:</dt> <dd>${formatNotes(notes)}</dd></div>`;
     }
 
+    /* Speech bubble: "feedback / tell us" */
+    const FEEDBACK_ICON =
+      '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/><path d="M12 8v4"/><path d="M12 15.5h.01"/></svg>';
+
     /* Small floor-plan icon shown on diagram buttons */
     const FLOORPLAN_ICON =
       '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" ' +
@@ -236,6 +313,7 @@
 
       return `
         <article class="card ${hasParking ? (isWarning ? "card--warn" : "") : "card--plain"}" data-ward="${item.id}">
+          <button type="button" class="suggest-link" data-suggest="${item.id}" aria-label="Suggest a change to ${escapeHtml(item.ward)}" title="Suggest a change">${FEEDBACK_ICON}</button>
           <div class="card__eyebrow">${escapeHtml(item.hospital)}</div>
           <h2 class="card__title">${escapeHtml(item.ward)}</h2>
           <dl class="card__body">${details}</dl>
@@ -333,12 +411,124 @@
         searchInput.addEventListener("input", () => scheduleSearchLog(renderResults()));
 
         renderResults();
+        document.getElementById("missingButton").hidden = false;
       } catch (error) {
         console.error(error);
         showError("The database may be waking up or unreachable. Wait a moment and refresh. " +
                   (error && error.message ? `(${error.message})` : ""));
       }
     }
+
+    /* ---------- Suggestions (anonymous; only Doug can read them) ---------- */
+
+    const dialog = document.getElementById("suggestDialog");
+    const suggestForm = document.getElementById("suggestForm");
+    let suggestWard = null;          // the ward being commented on, or null for "missing ward"
+    let suggestCoords = null;
+
+    function openSuggest(ward) {
+      suggestWard = ward;
+      suggestCoords = null;
+      suggestForm.reset();
+      suggestForm.hidden = false;
+      document.getElementById("suggestThanks").hidden = true;
+      document.getElementById("suggestError").textContent = "";
+      document.getElementById("suggestLocate").textContent = "Add my current location";
+      document.getElementById("suggestLocationNote").textContent = "Handy if you're standing at the best place to park.";
+
+      const missing = !ward;
+      document.getElementById("suggestTitle").textContent = missing ? "Tell us about a missing ward" : "Suggest a change";
+      document.getElementById("suggestAbout").textContent = missing ? "" : `${ward.ward} – ${ward.hospital}`;
+      document.getElementById("suggestAbout").hidden = missing;
+      document.getElementById("kindField").hidden = missing;
+      document.getElementById("hospitalField").hidden = !missing;
+      document.getElementById("wardNameField").hidden = !missing;
+      document.getElementById("suggestMessageLabel").textContent =
+        missing ? "Where is it, and where's best to park?" : "Details";
+
+      if (missing) {
+        const select = document.getElementById("suggestHospital");
+        select.innerHTML = [...hospitalFilter.options]
+          .map(o => `<option value="${o.value}">${o.value ? escapeHtml(o.textContent) : "Not sure / other"}</option>`).join("");
+        select.value = hospitalFilter.value;
+      }
+
+      if (dialog.showModal) dialog.showModal(); else dialog.setAttribute("open", "");
+    }
+
+    function closeSuggest() {
+      if (dialog.close) dialog.close(); else dialog.removeAttribute("open");
+    }
+
+    resultsElement.addEventListener("click", event => {
+      const link = event.target.closest("[data-suggest]");
+      if (link) openSuggest(wardsById.get(Number(link.dataset.suggest)));
+    });
+
+    document.getElementById("missingButton").addEventListener("click", () => openSuggest(null));
+    suggestForm.addEventListener("input", () => { document.getElementById("suggestError").textContent = ""; });
+    dialog.addEventListener("click", event => {
+      if (event.target.closest("[data-close]")) closeSuggest();
+    });
+
+    document.getElementById("suggestLocate").addEventListener("click", event => {
+      const button = event.currentTarget;
+      const note = document.getElementById("suggestLocationNote");
+      if (!navigator.geolocation) { note.textContent = "Location isn't available on this phone."; return; }
+      button.textContent = "Finding you…";
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          suggestCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          button.textContent = "Location added ✓";
+          note.textContent = "Your current position will be sent with this suggestion.";
+        },
+        () => {
+          button.textContent = "Add my current location";
+          note.textContent = "Couldn't get your location – check location is allowed for this site.";
+        },
+        { enableHighAccuracy: true, timeout: 15000 });
+    });
+
+    suggestForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const error = document.getElementById("suggestError");
+      const send = document.getElementById("suggestSend");
+      const details = document.getElementById("suggestMessage").value.trim();
+      const missing = !suggestWard;
+      const wardName = document.getElementById("suggestWardName").value.trim();
+
+      error.textContent = "";
+      if (missing && !wardName) { error.textContent = "Please add the ward or department name."; return; }
+      if (!missing && details.length < 3) { error.textContent = "Please add a few words about what's wrong."; return; }
+      if (!db) { error.textContent = "Not connected – please try again in a moment."; return; }
+
+      const hospitalId = missing
+        ? (Number(document.getElementById("suggestHospital").value) || null)
+        : suggestWard.hospitalId;
+
+      const row = {
+        kind: missing ? "Missing ward" : document.getElementById("suggestKind").value,
+        hospital_id: hospitalId,
+        ward_id: missing ? null : suggestWard.id,
+        message: missing ? `Ward: ${wardName}${details ? "\n" + details : ""}` : details,
+        suggested_latitude: suggestCoords ? Number(suggestCoords.lat.toFixed(6)) : null,
+        suggested_longitude: suggestCoords ? Number(suggestCoords.lng.toFixed(6)) : null,
+        device_id: DEVICE_ID
+      };
+
+      send.disabled = true; send.textContent = "Sending…";
+      const { error: dbError } = await db.from("suggestions").insert(row);
+      send.disabled = false; send.textContent = "Send";
+
+      if (dbError) {
+        error.textContent = /too many/i.test(dbError.message || "")
+          ? "You've sent a lot of suggestions recently – please try again later."
+          : "Sorry, that didn't send. Please try again.";
+        return;
+      }
+      suggestForm.hidden = true;
+      document.getElementById("suggestThanks").hidden = false;
+    });
 
     startApp();
   </script>

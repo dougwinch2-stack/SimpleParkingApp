@@ -25,6 +25,12 @@
     .admin-row__sub { color: var(--text-muted); font-size: var(--text-sm); }
     .admin-row__chev { color: var(--text-muted); flex: none; }
     [hidden] { display: none !important; }
+    .suggestion-text { white-space: pre-wrap; margin: var(--space-2) 0; }
+    @media (max-width: 480px) {
+      #tabs { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+      #tabs button:nth-child(3) { border-left: 0; }
+      #tabs button:nth-child(n+3) { border-top: 1px solid var(--border-strong); }
+    }
   </style>
 </head>
 <body>
@@ -62,6 +68,7 @@
     <section id="adminView" class="stack" hidden>
       <div class="row row--between">
         <div class="segmented" role="group" aria-label="What to edit" id="tabs">
+          <button type="button" data-tab="suggestions" id="suggestionsTab">Suggestions</button>
           <button type="button" data-tab="wards">Wards</button>
           <button type="button" data-tab="parking">Parking</button>
           <button type="button" data-tab="hospitals">Hospitals</button>
@@ -86,6 +93,7 @@
         <div class="row row--between">
           <span id="listCount" class="status-line"></span>
           <button id="addButton" class="btn btn--primary" type="button">Add</button>
+          <button id="finishedButton" class="btn btn--ghost" type="button" hidden>Show finished</button>
         </div>
         <div id="list" class="admin-list"></div>
       </div>
@@ -106,8 +114,9 @@
 
     const $ = id => document.getElementById(id);
     let db = null;
-    let tab = "wards";
-    let hospitals = [], parking = [], wards = [];
+    let tab = "suggestions";
+    let hospitals = [], parking = [], wards = [], suggestions = [];
+    let showFinished = false;
 
     /* ---------- Helpers ---------- */
 
@@ -150,13 +159,20 @@
     /* ---------- Data ---------- */
 
     async function loadAll() {
-      const [h, p, w] = await Promise.all([
+      const [h, p, w, s] = await Promise.all([
         db.from("hospitals").select("*").order("name"),
         db.from("parking_locations").select("*").order("name"),
-        db.from("wards").select("*").order("name")
+        db.from("wards").select("*").order("name"),
+        db.from("suggestions").select("*").order("created_at", { ascending: false }).limit(300)
       ]);
-      for (const r of [h, p, w]) if (r.error) throw r.error;
-      hospitals = h.data; parking = p.data; wards = w.data;
+      for (const r of [h, p, w, s]) if (r.error) throw r.error;
+      hospitals = h.data; parking = p.data; wards = w.data; suggestions = s.data;
+      updateSuggestionCount();
+    }
+
+    function updateSuggestionCount() {
+      const n = suggestions.filter(x => x.status === "Pending").length;
+      $("suggestionsTab").textContent = n ? `Suggestions (${n})` : "Suggestions";
     }
 
     async function save(table, id, row) {
@@ -179,6 +195,9 @@
 
     function renderList() {
       $("hospitalFilterField").hidden = tab === "hospitals";
+      $("addButton").hidden = tab === "suggestions";
+      $("finishedButton").hidden = tab !== "suggestions";
+      if (tab === "suggestions") { renderSuggestions(); return; }
       $("addButton").textContent = { wards: "Add ward", parking: "Add parking spot", hospitals: "Add hospital" }[tab];
 
       const hospitalId = Number($("hospitalFilter").value) || null;
@@ -227,6 +246,7 @@
     }
 
     function setTab(next) {
+      cameFromSuggestions = false;
       tab = next;
       document.querySelectorAll("#tabs button").forEach(b =>
         b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
@@ -239,6 +259,121 @@
       $("listView").hidden = false;
       renderList();
     }
+
+    /* ---------- Suggestions from crews ---------- */
+
+    function formatWhen(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " " +
+             d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function renderSuggestions() {
+      const hospitalId = Number($("hospitalFilter").value) || null;
+      const search = $("listSearch").value.trim().toLowerCase();
+      const finished = suggestions.filter(x => x.status !== "Pending").length;
+      $("finishedButton").textContent = showFinished ? "Hide finished" : `Show finished (${finished})`;
+
+      const items = suggestions
+        .filter(x => showFinished || x.status === "Pending")
+        .filter(x => !hospitalId || x.hospital_id === hospitalId)
+        .filter(x => {
+          if (!search) return true;
+          const ward = wards.find(w => w.id === x.ward_id);
+          return `${x.message} ${ward ? ward.name : ""}`.toLowerCase().includes(search);
+        });
+
+      $("listCount").textContent = `${items.length} ${items.length === 1 ? "suggestion" : "suggestions"}`;
+
+      $("list").innerHTML = items.length ? items.map(x => {
+        const ward = wards.find(w => w.id === x.ward_id);
+        const parkingSpot = ward && ward.parking_location_id ? parking.find(p => p.id === ward.parking_location_id) : null;
+        const hasCoords = x.suggested_latitude != null && x.suggested_longitude != null;
+        const coords = hasCoords ? `${Number(x.suggested_latitude)}, ${Number(x.suggested_longitude)}` : "";
+        const about = ward ? `${ward.name} – ${hospitalName(ward.hospital_id)}`
+                           : (x.hospital_id ? hospitalName(x.hospital_id) : "Hospital not given");
+        const statusBadge = x.status === "Pending" ? '<span class="badge badge--info">New</span>'
+          : x.status === "Approved" ? '<span class="badge badge--ok">Done</span>'
+          : '<span class="badge badge--neutral">Dismissed</span>';
+
+        const actions = [
+          ward ? `<button class="btn btn--secondary" type="button" data-s-action="ward" data-id="${x.id}">Open ward</button>` : "",
+          hasCoords && parkingSpot ? `<button class="btn btn--secondary" type="button" data-s-action="parking" data-id="${x.id}">Use location for “${escapeHtml(parkingSpot.name)}”</button>` : "",
+          hasCoords ? `<button class="btn btn--secondary" type="button" data-s-action="newparking" data-id="${x.id}">New parking spot here</button>` : "",
+          x.kind === "Missing ward" ? `<button class="btn btn--secondary" type="button" data-s-action="newward" data-id="${x.id}">Add as new ward</button>` : "",
+          hasCoords ? `<a class="btn btn--ghost" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}" target="_blank" rel="noopener">View location</a>` : ""
+        ].join("");
+
+        const finish = x.status === "Pending"
+          ? `<button class="btn btn--go" type="button" data-s-action="Approved" data-id="${x.id}">Done</button>
+             <button class="btn btn--ghost" type="button" data-s-action="Rejected" data-id="${x.id}">Dismiss</button>`
+          : `<button class="btn btn--ghost" type="button" data-s-action="Pending" data-id="${x.id}">Move back to new</button>`;
+
+        return `
+          <article class="card ${x.status === "Pending" ? "card--info" : "card--plain"}">
+            <div class="row row--between">
+              <span class="badge badge--neutral">${escapeHtml(x.kind)}</span>
+              <span class="status-line" style="margin:0">${statusBadge} ${formatWhen(x.created_at)}</span>
+            </div>
+            <h3 class="card__title" style="margin-top: var(--space-2)">${escapeHtml(about)}</h3>
+            <p class="suggestion-text">${escapeHtml(x.message)}</p>
+            ${hasCoords ? `<p class="status-line">Location sent: ${escapeHtml(coords)}</p>` : ""}
+            ${actions ? `<div class="card__actions" style="margin-bottom: var(--space-2)">${actions}</div>` : ""}
+            <div class="card__actions">${finish}</div>
+          </article>`;
+      }).join("") : `<div class="empty">${showFinished ? "No suggestions yet." : "No new suggestions."}</div>`;
+    }
+
+    async function setSuggestionStatus(id, status) {
+      const { error } = await db.from("suggestions")
+        .update({ status, reviewed_at: status === "Pending" ? null : new Date().toISOString() })
+        .eq("id", id).select().single();
+      if (error) throw error;
+      const item = suggestions.find(x => x.id === id);
+      if (item) item.status = status;
+      updateSuggestionCount();
+      renderList();
+    }
+
+    function openFrom(targetTab, id, prefill) {
+      cameFromSuggestions = true;
+      tab = targetTab;
+      document.querySelectorAll("#tabs button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
+      openEditor(id, prefill);
+    }
+
+    $("finishedButton").addEventListener("click", () => { showFinished = !showFinished; renderList(); });
+
+    $("list").addEventListener("click", async event => {
+      const button = event.target.closest("[data-s-action]");
+      if (!button) return;
+      const x = suggestions.find(s => s.id === Number(button.dataset.id));
+      if (!x) return;
+      const action = button.dataset.sAction;
+      const coords = x.suggested_latitude != null ? `${Number(x.suggested_latitude)}, ${Number(x.suggested_longitude)}` : "";
+      const ward = wards.find(w => w.id === x.ward_id);
+
+      try {
+        if (["Approved", "Rejected", "Pending"].includes(action)) {
+          button.disabled = true;
+          await setSuggestionStatus(x.id, action);
+          showMessage(action === "Approved" ? "Marked as done." : action === "Rejected" ? "Dismissed." : "Moved back to new.");
+        } else if (action === "ward") {
+          openFrom("wards", ward.id);
+        } else if (action === "parking") {
+          openFrom("parking", ward.parking_location_id, { coords });
+        } else if (action === "newparking") {
+          openFrom("parking", null, { coords, hospitalId: x.hospital_id || (ward && ward.hospital_id) });
+        } else if (action === "newward") {
+          const name = (x.message.match(/^Ward:\s*(.+)$/m) || [])[1] || "";
+          openFrom("wards", null, { name, hospitalId: x.hospital_id });
+        }
+      } catch (error) {
+        showMessage(friendlyError(error), "danger");
+        button.disabled = false;
+      }
+    });
 
     /* ---------- Edit forms ---------- */
 
@@ -266,14 +401,14 @@
         <div class="field__hint" style="margin-top: calc(-1 * var(--space-3))">Untick to hide it from crews without deleting it.</div>`;
     }
 
-    function wardForm(w) {
-      const hospitalId = w ? w.hospital_id : (Number($("hospitalFilter").value) || (hospitals[0] && hospitals[0].id));
+    function wardForm(w, prefill = {}) {
+      const hospitalId = w ? w.hospital_id : (prefill.hospitalId || Number($("hospitalFilter").value) || (hospitals[0] && hospitals[0].id));
       return `
         <h2>${w ? "Edit ward" : "Add ward"}</h2>
         <div class="field"><label for="f-hospital">Hospital</label>
           <select id="f-hospital" name="hospital_id">${hospitalOptions(hospitalId)}</select></div>
         <div class="field"><label for="f-name">Ward or department name</label>
-          <input id="f-name" name="name" required value="${escapeHtml(w ? w.name : "")}"></div>
+          <input id="f-name" name="name" required value="${escapeHtml(w ? w.name : (prefill.name || ""))}"></div>
         <div class="field"><label for="f-floor">Floor</label>
           <input id="f-floor" name="floor" value="${escapeHtml(w ? w.floor : "")}"></div>
         <div class="field"><label for="f-parking">Park at</label>
@@ -286,12 +421,13 @@
         ${formButtons}`;
     }
 
-    function parkingForm(p) {
-      const hospitalId = p ? p.hospital_id : (Number($("hospitalFilter").value) || (hospitals[0] && hospitals[0].id));
-      const coords = p ? `${Number(p.latitude)}, ${Number(p.longitude)}` : "";
+    function parkingForm(p, prefill = {}) {
+      const hospitalId = p ? p.hospital_id : (prefill.hospitalId || Number($("hospitalFilter").value) || (hospitals[0] && hospitals[0].id));
+      const coords = prefill.coords || (p ? `${Number(p.latitude)}, ${Number(p.longitude)}` : "");
       const used = p ? wards.filter(w => w.parking_location_id === p.id).length : 0;
       return `
         <h2>${p ? "Edit parking spot" : "Add parking spot"}</h2>
+        ${prefill.coords ? `<div class="alert alert--info">Location from a crew suggestion is filled in below. Check the route, then Save.</div>` : ""}
         ${p ? `<p class="status-line">Used by ${used} ward${used === 1 ? "" : "s"}. Renaming is safe – the wards using it update automatically.</p>` : ""}
         <div class="field"><label for="f-hospital">Hospital</label>
           <select id="f-hospital" name="hospital_id" ${p && used ? "disabled" : ""}>${hospitalOptions(hospitalId)}</select></div>
@@ -324,18 +460,19 @@
     }
 
     let editing = null;   // { table, id }
+    let cameFromSuggestions = false;
 
-    function openEditor(id) {
+    function openEditor(id, prefill = {}) {
       const form = $("editView");
       if (tab === "wards") {
         const w = id ? wards.find(x => x.id === id) : null;
-        form.innerHTML = wardForm(w); editing = { table: "wards", id };
+        form.innerHTML = wardForm(w, prefill); editing = { table: "wards", id };
         $("f-hospital").addEventListener("change", () => {
           $("f-parking").innerHTML = parkingOptions(Number($("f-hospital").value), null);
         });
       } else if (tab === "parking") {
         const p = id ? parking.find(x => x.id === id) : null;
-        form.innerHTML = parkingForm(p); editing = { table: "parking_locations", id };
+        form.innerHTML = parkingForm(p, prefill); editing = { table: "parking_locations", id };
       } else {
         const h = id ? hospitals.find(x => x.id === id) : null;
         form.innerHTML = hospitalForm(h); editing = { table: "hospitals", id };
@@ -390,7 +527,7 @@
         button.disabled = true; button.textContent = "Saving…";
         await save(editing.table, editing.id, row);
         fillHospitalFilter();
-        showList();
+        if (cameFromSuggestions) setTab("suggestions"); else showList();
         showMessage(`Saved “${row.name}”. Crews see the change next time they open the app.`);
       } catch (error) {
         $("formError").textContent = friendlyError(error);
@@ -403,7 +540,7 @@
       if (!action) return;
       const coordsInput = $("f-coords");
 
-      if (action.dataset.action === "cancel") showList();
+      if (action.dataset.action === "cancel") { if (cameFromSuggestions) setTab("suggestions"); else showList(); }
 
       if (action.dataset.action === "check") {
         const c = parseCoordinates(coordsInput.value);
