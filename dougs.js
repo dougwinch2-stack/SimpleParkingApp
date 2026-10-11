@@ -11,6 +11,7 @@
    Settings:
      Theme      Follow device | Light | Dark
      Wallboard  large text that scales with the screen (for TVs)
+     Admin      link shown only if the page has <meta name="dougs-admin" content="admin.html">
 
    A wallboard can also be set up by URL, which is then remembered:
      dashboard.html?theme=dark&wallboard=on
@@ -133,6 +134,16 @@
 
     panel.appendChild(themeGroup);
     panel.appendChild(wbGroup);
+
+    // Optional admin link: a page opts in with <meta name="dougs-admin" content="admin.html">
+    var adminMeta = document.querySelector('meta[name="dougs-admin"]');
+    if (adminMeta && adminMeta.content) {
+      var adminLink = document.createElement("a");
+      adminLink.className = "btn btn--ghost btn--block";
+      adminLink.href = adminMeta.content;
+      adminLink.textContent = "Admin";
+      panel.appendChild(adminLink);
+    }
     wrap.appendChild(button);
     wrap.appendChild(panel);
     header.appendChild(wrap);

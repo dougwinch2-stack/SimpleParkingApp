@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b4f6c">
+  <meta name="robots" content="noindex">
+  <title>Admin · Doug's Parking App</title>
+  <link rel="stylesheet" href="dougs.css">
+  <script src="dougs.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <style>
+    /* Page-only layout; colours come from dougs.css tokens */
+    .admin-list { display: grid; gap: var(--space-2); }
+    .admin-row {
+      display: flex; justify-content: space-between; align-items: center; gap: var(--space-3);
+      width: 100%; min-height: var(--touch); padding: var(--space-3) var(--space-4);
+      background: var(--surface); color: var(--text); text-align: left;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font: inherit; cursor: pointer;
+    }
+    .admin-row:hover { border-color: var(--border-strong); }
+    .admin-row__main { min-width: 0; }
+    .admin-row__title { font-weight: 700; }
+    .admin-row__sub { color: var(--text-muted); font-size: var(--text-sm); }
+    .admin-row__chev { color: var(--text-muted); flex: none; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a class="app-header__title" href="admin.html">Doug's Parking App</a>
+      <nav class="app-header__nav" aria-label="Main">
+        <a href="index.html">View app</a>
+        <a href="admin.html" aria-current="page">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container stack stack--lg">
+
+    <!-- ============ SIGN IN ============ -->
+    <section id="signInView" hidden>
+      <form id="signInForm" class="form-panel">
+        <h1>Admin sign in</h1>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" required>
+        </div>
+        <div id="signInError" class="field__error" role="alert"></div>
+        <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+      </form>
+    </section>
+
+    <!-- ============ ADMIN ============ -->
+    <section id="adminView" class="stack" hidden>
+      <div class="row row--between">
+        <div class="segmented" role="group" aria-label="What to edit" id="tabs">
+          <button type="button" data-tab="wards">Wards</button>
+          <button type="button" data-tab="parking">Parking</button>
+          <button type="button" data-tab="hospitals">Hospitals</button>
+        </div>
+        <button id="signOutButton" class="btn btn--ghost" type="button">Sign out</button>
+      </div>
+
+      <div id="message" role="status"></div>
+
+      <!-- List -->
+      <div id="listView" class="stack">
+        <div class="field-row">
+          <div class="field" id="hospitalFilterField">
+            <label for="hospitalFilter">Hospital</label>
+            <select id="hospitalFilter"></select>
+          </div>
+          <div class="field">
+            <label for="listSearch">Search</label>
+            <input id="listSearch" type="search" autocomplete="off">
+          </div>
+        </div>
+        <div class="row row--between">
+          <span id="listCount" class="status-line"></span>
+          <button id="addButton" class="btn btn--primary" type="button">Add</button>
+        </div>
+        <div id="list" class="admin-list"></div>
+      </div>
+
+      <!-- Edit form (built per item) -->
+      <form id="editView" class="form-panel" hidden novalidate></form>
+    </section>
+
+    <p id="loading" class="status-line">Loading…</p>
+  </main>
+
+  <script>
+    /* =================================================================
+       SUPABASE CONNECTION – same two values as index.html
+       ================================================================= */
+    const SUPABASE_URL = "https://vruayefwgzwlwestsedo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_AWpInxkGOBc1bWFsJQjB_g_vBKftpm9";
+
+    const $ = id => document.getElementById(id);
+    let db = null;
+    let tab = "wards";
+    let hospitals = [], parking = [], wards = [];
+
+    /* ---------- Helpers ---------- */
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function blankToNull(value) {
+      const v = String(value == null ? "" : value).trim();
+      return v === "" ? null : v;
+    }
+
+    function showMessage(text, kind = "ok") {
+      $("message").innerHTML = text ? `<div class="alert alert--${kind}">${escapeHtml(text)}</div>` : "";
+      if (text && kind === "ok") setTimeout(() => { $("message").innerHTML = ""; }, 4000);
+    }
+
+    function friendlyError(error) {
+      const msg = (error && error.message) || String(error);
+      if (/duplicate key|unique/i.test(msg)) return "That name is already used at this hospital.";
+      if (/row-level security|permission denied/i.test(msg)) return "Your account isn't allowed to make changes.";
+      if (/not at this ward's hospital/i.test(msg)) return "That parking spot belongs to a different hospital.";
+      return msg;
+    }
+
+    const hospitalName = id => (hospitals.find(h => h.id === id) || {}).name || "?";
+    const parkingName = id => (parking.find(p => p.id === id) || {}).name || "";
+
+    /* Accepts "51.7731968, 0.4663185", or a Google Maps link containing the coordinates */
+    function parseCoordinates(text) {
+      const match = String(text || "").match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+      if (!match) return null;
+      const lat = Number(match[1]), lng = Number(match[2]);
+      if (lat < 49 || lat > 61 || lng < -9 || lng > 3) return null;   // UK only
+      return { lat, lng };
+    }
+
+    /* ---------- Data ---------- */
+
+    async function loadAll() {
+      const [h, p, w] = await Promise.all([
+        db.from("hospitals").select("*").order("name"),
+        db.from("parking_locations").select("*").order("name"),
+        db.from("wards").select("*").order("name")
+      ]);
+      for (const r of [h, p, w]) if (r.error) throw r.error;
+      hospitals = h.data; parking = p.data; wards = w.data;
+    }
+
+    async function save(table, id, row) {
+      const query = id
+        ? db.from(table).update(row).eq("id", id)
+        : db.from(table).insert(row);
+      const { error } = await query.select().single();
+      if (error) throw error;
+      await loadAll();
+    }
+
+    /* ---------- List view ---------- */
+
+    function fillHospitalFilter() {
+      const current = $("hospitalFilter").value;
+      $("hospitalFilter").innerHTML = '<option value="">All hospitals</option>' +
+        hospitals.map(h => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join("");
+      $("hospitalFilter").value = current;
+    }
+
+    function renderList() {
+      $("hospitalFilterField").hidden = tab === "hospitals";
+      $("addButton").textContent = { wards: "Add ward", parking: "Add parking spot", hospitals: "Add hospital" }[tab];
+
+      const hospitalId = Number($("hospitalFilter").value) || null;
+      const search = $("listSearch").value.trim().toLowerCase();
+      const matches = (text) => !search || text.toLowerCase().includes(search);
+
+      let items = [];
+      if (tab === "wards") {
+        items = wards
+          .filter(w => !hospitalId || w.hospital_id === hospitalId)
+          .filter(w => matches(`${w.name} ${w.notes || ""} ${parkingName(w.parking_location_id)}`))
+          .map(w => ({
+            id: w.id, title: w.name, active: w.active,
+            sub: `${hospitalName(w.hospital_id)} · ${w.parking_location_id ? "Park at " + parkingName(w.parking_location_id) : "No parking set"}`
+          }));
+      } else if (tab === "parking") {
+        items = parking
+          .filter(p => !hospitalId || p.hospital_id === hospitalId)
+          .filter(p => matches(`${p.name} ${p.driver_notes || ""}`))
+          .map(p => {
+            const used = wards.filter(w => w.parking_location_id === p.id).length;
+            return { id: p.id, title: p.name, active: p.active,
+                     sub: `${hospitalName(p.hospital_id)} · used by ${used} ward${used === 1 ? "" : "s"}` };
+          });
+      } else {
+        items = hospitals
+          .filter(h => matches(h.name))
+          .map(h => {
+            const n = wards.filter(w => w.hospital_id === h.id).length;
+            return { id: h.id, title: h.name, active: h.active, sub: `${n} ward${n === 1 ? "" : "s"}` };
+          });
+      }
+
+      $("listCount").textContent = `${items.length} ${items.length === 1 ? "item" : "items"}`;
+      $("list").innerHTML = items.length
+        ? items.map(i => `
+            <button type="button" class="admin-row" data-id="${i.id}">
+              <span class="admin-row__main">
+                <span class="admin-row__title">${escapeHtml(i.title)}</span>
+                ${i.active ? "" : ' <span class="badge badge--neutral">Hidden</span>'}
+                <div class="admin-row__sub">${escapeHtml(i.sub)}</div>
+              </span>
+              <span class="admin-row__chev" aria-hidden="true">›</span>
+            </button>`).join("")
+        : '<div class="empty">Nothing matches.</div>';
+    }
+
+    function setTab(next) {
+      tab = next;
+      document.querySelectorAll("#tabs button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
+      $("listSearch").value = "";
+      showList();
+    }
+
+    function showList() {
+      $("editView").hidden = true;
+      $("listView").hidden = false;
+      renderList();
+    }
+
+    /* ---------- Edit forms ---------- */
+
+    function hospitalOptions(selected) {
+      return hospitals.map(h =>
+        `<option value="${h.id}" ${h.id === selected ? "selected" : ""}>${escapeHtml(h.name)}${h.active ? "" : " (hidden)"}</option>`).join("");
+    }
+
+    function parkingOptions(hospitalId, selected) {
+      return '<option value="">None yet (shows "Parking location not yet available")</option>' +
+        parking.filter(p => p.hospital_id === hospitalId).map(p =>
+          `<option value="${p.id}" ${p.id === selected ? "selected" : ""}>${escapeHtml(p.name)}${p.active ? "" : " (hidden)"}</option>`).join("");
+    }
+
+    const formButtons = `
+      <div id="formError" class="field__error" role="alert"></div>
+      <div class="row">
+        <button class="btn btn--go" type="submit">Save</button>
+        <button class="btn btn--ghost" type="button" data-action="cancel">Cancel</button>
+      </div>`;
+
+    function activeField(item, label) {
+      return `
+        <label class="check"><input type="checkbox" name="active" ${!item || item.active ? "checked" : ""}> ${label}</label>
+        <div class="field__hint" style="margin-top: calc(-1 * var(--space-3))">Untick to hide it from crews without deleting it.</div>`;
+    }
+
+    function wardForm(w) {
+      const hospitalId = w ? w.hospital_id : (Number($("hospitalFilter").value) || (hospitals[0] && hospitals[0].id));
+      return `
+        <h2>${w ? "Edit ward" : "Add ward"}</h2>
+        <div class="field"><label for="f-hospital">Hospital</label>
+          <select id="f-hospital" name="hospital_id">${hospitalOptions(hospitalId)}</select></div>
+        <div class="field"><label for="f-name">Ward or department name</label>
+          <input id="f-name" name="name" required value="${escapeHtml(w ? w.name : "")}"></div>
+        <div class="field"><label for="f-floor">Floor</label>
+          <input id="f-floor" name="floor" value="${escapeHtml(w ? w.floor : "")}"></div>
+        <div class="field"><label for="f-parking">Park at</label>
+          <select id="f-parking" name="parking_location_id">${parkingOptions(hospitalId, w ? w.parking_location_id : null)}</select>
+          <div class="field__hint">Missing? Add it on the Parking tab first.</div></div>
+        <div class="field"><label for="f-notes">Notes</label>
+          <textarea id="f-notes" name="notes">${escapeHtml(w ? w.notes : "")}</textarea>
+          <div class="field__hint">Use | to start a new line. Phone numbers become tappable.</div></div>
+        ${activeField(w, "Show to crews")}
+        ${formButtons}`;
+    }
+
+    function parkingForm(p) {
+      const hospitalId = p ? p.hospital_id : (Number($("hospitalFilter").value) || (hospitals[0] && hospitals[0].id));
+      const coords = p ? `${Number(p.latitude)}, ${Number(p.longitude)}` : "";
+      const used = p ? wards.filter(w => w.parking_location_id === p.id).length : 0;
+      return `
+        <h2>${p ? "Edit parking spot" : "Add parking spot"}</h2>
+        ${p ? `<p class="status-line">Used by ${used} ward${used === 1 ? "" : "s"}. Renaming is safe – wards are linked by ID.</p>` : ""}
+        <div class="field"><label for="f-hospital">Hospital</label>
+          <select id="f-hospital" name="hospital_id" ${p && used ? "disabled" : ""}>${hospitalOptions(hospitalId)}</select></div>
+        <div class="field"><label for="f-name">Name</label>
+          <input id="f-name" name="name" required value="${escapeHtml(p ? p.name : "")}"></div>
+        <div class="field"><label for="f-coords">Coordinates</label>
+          <input id="f-coords" name="coords" inputmode="decimal" required value="${escapeHtml(coords)}"
+                 placeholder="51.7731968, 0.4663185" aria-describedby="coords-hint">
+          <div class="field__hint" id="coords-hint">Paste from Google Maps (long-press the spot). Put the pin on the road you want crews to arrive by.</div>
+          <div class="row" style="margin-top: var(--space-2)">
+            <button class="btn btn--secondary" type="button" data-action="locate">Use my location</button>
+            <button class="btn btn--ghost" type="button" data-action="check">Check route in Google Maps</button>
+          </div></div>
+        <div class="field"><label for="f-driver">Driver notes</label>
+          <textarea id="f-driver" name="driver_notes">${escapeHtml(p ? p.driver_notes : "")}</textarea>
+          <div class="field__hint">Use | to start a new line. Start with **WARNING** for the amber box.</div></div>
+        <div class="field"><label for="f-approach">Preferred approach (optional)</label>
+          <input id="f-approach" name="preferred_approach" value="${escapeHtml(p ? p.preferred_approach : "")}" placeholder="e.g. From the A13 or A127"></div>
+        ${activeField(p, "Available to use")}
+        ${formButtons}`;
+    }
+
+    function hospitalForm(h) {
+      return `
+        <h2>${h ? "Edit hospital" : "Add hospital"}</h2>
+        <div class="field"><label for="f-name">Name</label>
+          <input id="f-name" name="name" required value="${escapeHtml(h ? h.name : "")}"></div>
+        ${activeField(h, "Show to crews")}
+        ${formButtons}`;
+    }
+
+    let editing = null;   // { table, id }
+
+    function openEditor(id) {
+      const form = $("editView");
+      if (tab === "wards") {
+        const w = id ? wards.find(x => x.id === id) : null;
+        form.innerHTML = wardForm(w); editing = { table: "wards", id };
+        $("f-hospital").addEventListener("change", () => {
+          $("f-parking").innerHTML = parkingOptions(Number($("f-hospital").value), null);
+        });
+      } else if (tab === "parking") {
+        const p = id ? parking.find(x => x.id === id) : null;
+        form.innerHTML = parkingForm(p); editing = { table: "parking_locations", id };
+      } else {
+        const h = id ? hospitals.find(x => x.id === id) : null;
+        form.innerHTML = hospitalForm(h); editing = { table: "hospitals", id };
+      }
+      $("listView").hidden = true;
+      form.hidden = false;
+      showMessage("");
+      window.scrollTo(0, 0);
+      $("f-name").focus();
+    }
+
+    function readForm() {
+      const f = $("editView");
+      const get = name => f.elements[name] ? f.elements[name].value : undefined;
+      const active = f.elements.active.checked;
+      const name = blankToNull(get("name"));
+      if (!name) throw new Error("Please enter a name.");
+
+      if (editing.table === "wards") {
+        return {
+          hospital_id: Number(get("hospital_id")),
+          name,
+          floor: blankToNull(get("floor")),
+          parking_location_id: get("parking_location_id") ? Number(get("parking_location_id")) : null,
+          notes: blankToNull(get("notes")),
+          active
+        };
+      }
+      if (editing.table === "parking_locations") {
+        const c = parseCoordinates(get("coords"));
+        if (!c) throw new Error("Coordinates must look like 51.7731968, 0.4663185 (UK only).");
+        const row = {
+          name,
+          latitude: c.lat,
+          longitude: c.lng,
+          driver_notes: blankToNull(get("driver_notes")),
+          preferred_approach: blankToNull(get("preferred_approach")),
+          active
+        };
+        if (!f.elements.hospital_id.disabled) row.hospital_id = Number(get("hospital_id"));
+        return row;
+      }
+      return { name, active };
+    }
+
+    $("editView").addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = event.target.querySelector('[type="submit"]');
+      $("formError").textContent = "";
+      try {
+        const row = readForm();
+        button.disabled = true; button.textContent = "Saving…";
+        await save(editing.table, editing.id, row);
+        fillHospitalFilter();
+        showList();
+        showMessage(`Saved “${row.name}”. Crews see the change next time they open the app.`);
+      } catch (error) {
+        $("formError").textContent = friendlyError(error);
+        button.disabled = false; button.textContent = "Save";
+      }
+    });
+
+    $("editView").addEventListener("click", event => {
+      const action = event.target.closest("[data-action]");
+      if (!action) return;
+      const coordsInput = $("f-coords");
+
+      if (action.dataset.action === "cancel") showList();
+
+      if (action.dataset.action === "check") {
+        const c = parseCoordinates(coordsInput.value);
+        if (!c) { $("formError").textContent = "Enter coordinates first."; return; }
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`, "_blank", "noopener");
+      }
+
+      if (action.dataset.action === "locate") {
+        if (!navigator.geolocation) { $("formError").textContent = "Location isn't available on this device."; return; }
+        action.textContent = "Finding you…";
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            coordsInput.value = `${pos.coords.latitude.toFixed(7)}, ${pos.coords.longitude.toFixed(7)}`;
+            action.textContent = "Use my location";
+          },
+          () => {
+            $("formError").textContent = "Couldn't get your location – check location permission.";
+            action.textContent = "Use my location";
+          },
+          { enableHighAccuracy: true, timeout: 15000 });
+      }
+    });
+
+    $("list").addEventListener("click", event => {
+      const row = event.target.closest(".admin-row");
+      if (row) openEditor(Number(row.dataset.id));
+    });
+
+    $("addButton").addEventListener("click", () => openEditor(null));
+    $("hospitalFilter").addEventListener("change", renderList);
+    $("listSearch").addEventListener("input", renderList);
+    document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
+
+    /* ---------- Sign in / out ---------- */
+
+    async function enterAdmin() {
+      const { data, error } = await db.from("editors").select("user_id").limit(1);
+      if (error || !data || data.length === 0) {
+        await db.auth.signOut();
+        showSignIn("This account isn't set up as an editor.");
+        return;
+      }
+      await loadAll();
+      fillHospitalFilter();
+      $("signInView").hidden = true;
+      $("adminView").hidden = false;
+      $("loading").hidden = true;
+      setTab(tab);
+    }
+
+    function showSignIn(errorText = "") {
+      $("adminView").hidden = true;
+      $("loading").hidden = true;
+      $("signInView").hidden = false;
+      $("signInError").textContent = errorText;
+    }
+
+    $("signInForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = event.target.querySelector("button");
+      button.disabled = true; button.textContent = "Signing in…";
+      $("signInError").textContent = "";
+      const { error } = await db.auth.signInWithPassword({
+        email: $("email").value.trim(),
+        password: $("password").value
+      });
+      button.disabled = false; button.textContent = "Sign in";
+      if (error) { $("signInError").textContent = "Email or password not recognised."; return; }
+      $("password").value = "";
+      try { await enterAdmin(); } catch (e) { showSignIn(friendlyError(e)); }
+    });
+
+    $("signOutButton").addEventListener("click", async () => {
+      await db.auth.signOut();
+      showSignIn();
+    });
+
+    async function start() {
+      if (SUPABASE_URL.startsWith("PASTE") || !window.supabase) {
+        $("loading").textContent = "The Supabase project details haven't been added to admin.html yet.";
+        return;
+      }
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data } = await db.auth.getSession();
+      if (data && data.session) {
+        try { await enterAdmin(); } catch (e) { showSignIn(friendlyError(e)); }
+      } else {
+        showSignIn();
+      }
+    }
+
+    start();
+  </script>
+</body>
+</html>
