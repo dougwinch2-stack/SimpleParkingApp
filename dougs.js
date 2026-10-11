@@ -11,7 +11,8 @@
    Settings:
      Theme      Follow device | Light | Dark
      Wallboard  large text that scales with the screen (for TVs)
-     Admin      link shown only if the page has <meta name="dougs-admin" content="admin.html">
+     Wallboard  only if the page has <meta name="dougs-wallboard" content="on">
+     Admin      only if the page has <meta name="dougs-admin" content="admin.html">
 
    A wallboard can also be set up by URL, which is then remembered:
      dashboard.html?theme=dark&wallboard=on
@@ -64,7 +65,13 @@
   // unless the person has chosen otherwise.
   var savedTheme = load(KEYS.theme);
   if (savedTheme) applyTheme(savedTheme);
-  applyWallboard(load(KEYS.wallboard) === "on" || root.classList.contains("wallboard"));
+
+  // Wallboard size is only offered on pages that opt in:
+  //   <meta name="dougs-wallboard" content="on">  (put it BEFORE the dougs.js line)
+  var wallboardAllowed = !!document.querySelector('meta[name="dougs-wallboard"]') ||
+                         root.classList.contains("wallboard");
+  applyWallboard(wallboardAllowed &&
+                 (load(KEYS.wallboard) === "on" || root.classList.contains("wallboard")));
 
   /* ---- 2. Build the ⋮ menu once the page has loaded ---- */
   var THEMES = [
@@ -100,19 +107,28 @@
     panel.id = "settings-panel";
     panel.hidden = true;
 
-    // Theme
-    var themeGroup = document.createElement("div");
-    themeGroup.className = "settings__group";
-    themeGroup.innerHTML = '<div class="settings__label" id="settings-theme-label">Theme</div>';
+    // ---- Theme: a row showing the current choice; tap to show the options ----
+    var themeRow = document.createElement("button");
+    themeRow.type = "button";
+    themeRow.className = "settings__link settings__row";
+    themeRow.setAttribute("aria-expanded", "false");
+    themeRow.setAttribute("aria-controls", "settings-theme-options");
+    themeRow.innerHTML = 'Theme <span class="settings__value"></span>';
 
-    var segmented = document.createElement("div");
-    segmented.className = "segmented";
-    segmented.setAttribute("role", "group");
-    segmented.setAttribute("aria-labelledby", "settings-theme-label");
+    var themeOptions = document.createElement("div");
+    themeOptions.className = "settings__options";
+    themeOptions.id = "settings-theme-options";
+    themeOptions.hidden = true;
+
+    var choices = document.createElement("div");
+    choices.setAttribute("role", "radiogroup");
+    choices.setAttribute("aria-label", "Theme");
 
     THEMES.forEach(function (option) {
       var b = document.createElement("button");
       b.type = "button";
+      b.className = "settings__choice";
+      b.setAttribute("role", "radio");
       b.textContent = option.label;
       b.dataset.theme = option.value;
       b.addEventListener("click", function () {
@@ -120,54 +136,65 @@
         save(KEYS.theme, option.value === "auto" ? null : option.value);
         sync();
       });
-      segmented.appendChild(b);
+      choices.appendChild(b);
     });
-    themeGroup.appendChild(segmented);
+    themeOptions.appendChild(choices);
 
-    // Wallboard
-    var wbGroup = document.createElement("div");
-    wbGroup.className = "settings__group";
-    wbGroup.innerHTML =
-      '<label class="check settings__check">' +
-      '<input type="checkbox" id="settings-wallboard"> Wallboard size</label>' +
-      '<div class="settings__hint">Large text for TVs and wall screens</div>';
+    themeRow.addEventListener("click", function () {
+      var show = themeOptions.hidden;
+      themeOptions.hidden = !show;
+      themeRow.setAttribute("aria-expanded", String(show));
+    });
 
-    panel.appendChild(themeGroup);
-    panel.appendChild(wbGroup);
+    panel.appendChild(themeRow);
+    panel.appendChild(themeOptions);
 
-    // Optional admin link: a page opts in with <meta name="dougs-admin" content="admin.html">
+    // ---- Wallboard size: only on pages that opt in ----
+    var wbInput = null;
+    if (wallboardAllowed) {
+      var wbRow = document.createElement("label");
+      wbRow.className = "settings__link settings__row settings__check-row";
+      wbRow.innerHTML = 'Wallboard size <input type="checkbox" id="settings-wallboard">';
+      panel.appendChild(wbRow);
+      wbInput = wbRow.querySelector("input");
+      wbInput.addEventListener("change", function () {
+        applyWallboard(wbInput.checked);
+        save(KEYS.wallboard, wbInput.checked ? "on" : null);
+      });
+    }
+
+    // ---- Admin link: only on pages that opt in ----
     var adminMeta = document.querySelector('meta[name="dougs-admin"]');
     if (adminMeta && adminMeta.content) {
       var adminLink = document.createElement("a");
-      adminLink.className = "btn btn--ghost btn--block";
+      adminLink.className = "settings__link settings__row";
       adminLink.href = adminMeta.content;
       adminLink.textContent = "Admin";
       panel.appendChild(adminLink);
     }
+
     wrap.appendChild(button);
     wrap.appendChild(panel);
     header.appendChild(wrap);
 
-    var wbInput = wbGroup.querySelector("input");
-    wbInput.addEventListener("change", function () {
-      applyWallboard(wbInput.checked);
-      save(KEYS.wallboard, wbInput.checked ? "on" : null);
-    });
+    var THEME_NAMES = { auto: "Device", light: "Light", dark: "Dark" };
 
     function sync() {
       var mode = currentTheme();
-      segmented.querySelectorAll("button").forEach(function (b) {
-        b.setAttribute("aria-pressed", String(b.dataset.theme === mode));
+      choices.querySelectorAll("button").forEach(function (b) {
+        b.setAttribute("aria-checked", String(b.dataset.theme === mode));
       });
-      wbInput.checked = root.classList.contains("wallboard");
+      themeRow.querySelector(".settings__value").textContent = THEME_NAMES[mode];
+      if (wbInput) wbInput.checked = root.classList.contains("wallboard");
     }
 
     function open() {
       sync();
+      themeOptions.hidden = true;
+      themeRow.setAttribute("aria-expanded", "false");
       panel.hidden = false;
       button.setAttribute("aria-expanded", "true");
-      var pressed = segmented.querySelector('[aria-pressed="true"]');
-      (pressed || segmented.querySelector("button")).focus();
+      themeRow.focus();
     }
     function close(returnFocus) {
       if (panel.hidden) return;

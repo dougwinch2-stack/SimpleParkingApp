@@ -296,7 +296,6 @@ img, svg { max-width: 100%; height: auto; }
 .settings {
   position: relative;
   order: 2;
-  margin-right: calc(-1 * var(--space-2));
 }
 
 .settings__button {
@@ -320,14 +319,14 @@ img, svg { max-width: 100%; height: auto; }
 .settings__panel {
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   z-index: 50;
   width: max-content;
   min-width: 260px;
   max-width: calc(100vw - 2 * var(--space-4));
-  padding: var(--space-4);
+  padding: 0;
   display: grid;
-  gap: var(--space-4);
+  overflow: hidden;
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -340,6 +339,62 @@ img, svg { max-width: 100%; height: auto; }
 .settings__label { font-size: var(--text-sm); font-weight: 700; }
 .settings__hint  { font-size: var(--text-xs); color: var(--text-muted); margin-top: calc(-1 * var(--space-2)); }
 .settings__check { min-height: 40px; }
+
+/* Menu rows: Theme ›, Wallboard size, Admin › */
+.settings__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--border);
+  color: var(--brand-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.settings__row:first-child { border-top: 0; }
+.settings__row:hover { background: var(--surface-2); }
+a.settings__row::after,
+button.settings__row::after {            /* chevron drawn with borders, so it turns cleanly */
+  content: "";
+  flex: none;
+  width: 0.5em;
+  height: 0.5em;
+  margin-right: 0.15em;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(-45deg);
+}
+a.settings__row::after { margin-left: auto; }
+button.settings__row[aria-expanded="true"]::after { transform: rotate(45deg); }
+.settings__value { margin-left: auto; color: var(--text-muted); font-weight: 500; }
+.settings__check-row input { margin-left: auto; width: 22px; height: 22px; accent-color: var(--brand-fill); }
+.settings__options { padding: 0 0 var(--space-1); }
+
+/* Theme choices: plain text rows, tick on the one in use */
+.settings__choice {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-4) 0 calc(var(--space-4) + var(--space-4));
+  background: none;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.settings__choice:hover { background: var(--surface-2); }
+.settings__choice[aria-checked="true"] { color: var(--brand-text); font-weight: 600; }
+.settings__choice[aria-checked="true"]::after { content: "✓"; margin-left: auto; font-weight: 700; }
+.settings__options[hidden] { display: none; }
 
 /* Segmented control: a row of joined toggle buttons */
 .segmented {
