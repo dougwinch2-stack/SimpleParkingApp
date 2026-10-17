@@ -12,6 +12,7 @@
      Theme      Follow device | Light | Dark
      Wallboard  large text that scales with the screen (for TVs)
      Wallboard  only if the page has <meta name="dougs-wallboard" content="on">
+     Links      one per <meta name="dougs-link" content="Label|page.html">
      Admin      only if the page has <meta name="dougs-admin" content="admin.html">
 
    A wallboard can also be set up by URL, which is then remembered:
@@ -162,6 +163,17 @@
         save(KEYS.wallboard, wbInput.checked ? "on" : null);
       });
     }
+
+    // ---- Extra links: one per <meta name="dougs-link" content="Label|page.html"> ----
+    document.querySelectorAll('meta[name="dougs-link"]').forEach(function (meta) {
+      var parts = (meta.content || "").split("|");
+      if (parts.length !== 2) return;
+      var link = document.createElement("a");
+      link.className = "settings__link settings__row";
+      link.href = parts[1].trim();
+      link.textContent = parts[0].trim();
+      panel.appendChild(link);
+    });
 
     // ---- Admin link: only on pages that opt in ----
     var adminMeta = document.querySelector('meta[name="dougs-admin"]');
