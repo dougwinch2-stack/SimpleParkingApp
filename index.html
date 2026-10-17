@@ -18,9 +18,16 @@
     /* Small text-style button for "Suggest a change" (colours from dougs.css) */
     /* Feedback bubble in the card's top-right corner – adds no height to the card */
     .card { position: relative; }
-    .card__title { padding-right: 5.25rem; }
-    .card__eyebrow { padding-right: 5.25rem; }
-    .card__corner { position: absolute; top: var(--space-2); right: var(--space-2); display: flex; }
+    /* Top-right corner: share + feedback icons, and Finn's score underneath.
+       It floats, so the ward name and details wrap round it. */
+    .card__corner {
+      float: right; width: 88px; margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) var(--space-1) var(--space-2);
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .card__icons { display: flex; }
+    .card__body { display: block; }
+    .card__body > div + div { margin-top: var(--space-1); }
+    .card__after { clear: right; }
     .corner-btn {
       width: 44px; height: 44px; display: grid; place-items: center;
       background: none; border: 0; border-radius: 50%; color: var(--text-muted); cursor: pointer;
@@ -37,19 +44,18 @@
     .dialog h2 { margin: 0; }
     [hidden] { display: none !important; }
 
-    /* Finn's Rating: a square with the score out of 10 */
-    .finn { display: flex; align-items: center; gap: var(--space-3); margin: 0 0 var(--space-3); }
+    /* Finn's Rating: "Finn says" over a small coloured square with the score */
+    .finn { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 2px; }
+    .finn__label { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); white-space: nowrap; }
     .finn__square {
-      flex: none; width: 56px; height: 56px; display: grid; place-content: center; text-align: center;
-      background: var(--brand-fill); color: var(--on-fill); border-radius: var(--radius-sm); line-height: 1;
+      width: 40px; height: 40px; display: grid; place-items: center;
+      background: var(--brand-fill); color: var(--on-fill); border-radius: var(--radius-sm);
+      font-size: 1.25rem; font-weight: 800; line-height: 1;
     }
     /* 0–4 red, 5–7 amber, 8–10 green (status colours from dougs.css) */
     .finn--red   .finn__square { background: var(--danger-fill); }
     .finn--amber .finn__square { background: var(--warn-fill); }
     .finn--green .finn__square { background: var(--ok-fill); }
-    .finn__score { font-size: 1.5rem; font-weight: 800; }
-    .finn__out { font-size: var(--text-xs); font-weight: 600; opacity: .85; margin-top: 2px; }
-    .finn__label { font-weight: 800; color: var(--brand-text); letter-spacing: .02em; }
 
     /* Full-screen photo viewer: always dark, like a phone's own photo viewer */
     .photo-viewer {
@@ -475,21 +481,25 @@
       return `
         <article class="card ${hasParking ? (isWarning ? "card--warn" : "") : "card--plain"}" data-ward="${item.id}">
           <div class="card__corner">
+            <div class="card__icons">
             <button type="button" class="corner-btn" data-share="${item.id}" aria-label="Share a link to ${escapeHtml(item.ward)}" title="Share">${SHARE_ICON}</button>
             <button type="button" class="corner-btn suggest-link" data-suggest="${item.id}" aria-label="Suggest a change to ${escapeHtml(item.ward)}" title="Suggest a change">${FEEDBACK_ICON}</button>
+            </div>
+            ${item.finnScore == null ? "" : `
+            <div class="finn finn--${item.finnScore >= 8 ? "green" : item.finnScore >= 5 ? "amber" : "red"}" role="img" aria-label="Finn says ${item.finnScore} out of 10">
+              <span class="finn__label" aria-hidden="true">Finn says</span>
+              <span class="finn__square" aria-hidden="true">${item.finnScore}</span>
+            </div>`}
           </div>
           <div class="card__eyebrow">${escapeHtml(item.hospital)}</div>
           <h2 class="card__title">${escapeHtml(item.ward)}</h2>
           <dl class="card__body">${details}</dl>
-          ${item.finnScore == null ? "" : `
-          <div class="finn finn--${item.finnScore >= 8 ? "green" : item.finnScore >= 5 ? "amber" : "red"}" aria-label="Finn's Rating: ${item.finnScore} out of 10">
-            <div class="finn__square" aria-hidden="true"><span class="finn__score">${item.finnScore}</span><span class="finn__out">/10</span></div>
-            <span class="finn__label" aria-hidden="true">Finn's Rating</span>
-          </div>`}
+          <div class="card__after">
           ${isWarning ? `<div style="margin-bottom: var(--space-3)">${driverNotesHtml(item.driverNotes)}</div>` : ""}
           ${hasParking ? "" : '<p class="text-warn small"><strong>Parking location not yet available</strong></p>'}
           ${parkingActions ? `<div class="card__actions" style="margin-bottom: var(--space-2)">${parkingActions}</div>` : ""}
           <div class="card__actions">${photoButton(item)}${diagramButtons(item.diagrams)}</div>
+          </div>
         </article>`;
     }
 
