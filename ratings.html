@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b4f6c">
+  <meta name="robots" content="noindex">
+  <title>Finn's Rating · Doug's Parking App</title>
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="icon" href="icon-shortcut-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="dougs.css">
+  <script src="dougs.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <style>
+    [hidden] { display: none !important; }
+    .rate-list { display: grid; gap: var(--space-2); }
+    .rate-row {
+      display: flex; align-items: center; gap: var(--space-3);
+      width: 100%; min-height: var(--touch); padding: var(--space-3) var(--space-4);
+      background: var(--surface); color: var(--text); text-align: left;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font: inherit; cursor: pointer;
+    }
+    .rate-row:hover { border-color: var(--border-strong); }
+    .rate-row__main { flex: 1; min-width: 0; }
+    .rate-row__title { font-weight: 700; }
+    .rate-row__sub { color: var(--text-muted); font-size: var(--text-sm); }
+    .mini-score {
+      flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+      border: 2px solid var(--brand-text); border-radius: var(--radius-sm);
+      color: var(--brand-text); font-weight: 800; font-size: var(--text-md);
+    }
+    .rag-red   { background: var(--danger-fill); border-color: var(--danger-fill); color: var(--on-fill); }
+    .rag-amber { background: var(--warn-fill);   border-color: var(--warn-fill);   color: var(--on-fill); }
+    .rag-green { background: var(--ok-fill);     border-color: var(--ok-fill);     color: var(--on-fill); }
+    .mini-score--none { border-style: dashed; border-color: var(--border-strong); color: var(--text-muted); font-weight: 600; }
+    .score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: var(--space-2); }
+    .score-btn {
+      min-height: 56px; border: 2px solid var(--border-strong); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--text); font: inherit; font-size: 1.25rem; font-weight: 800; cursor: pointer;
+    }
+    .score-btn:hover { border-color: var(--brand-text); }
+    .score-btn[aria-pressed="true"] { background: var(--brand-fill); border-color: var(--brand-fill); color: var(--on-fill); }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a class="app-header__title" href="ratings.html">Finn's Rating</a>
+      <nav class="app-header__nav" aria-label="Main">
+        <a href="index.html">View app</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container stack stack--lg">
+
+    <!-- ============ NO CODE ============ -->
+    <section id="signInView" hidden>
+      <div class="form-panel">
+        <h1 id="keepOutTitle">Finn's Rating</h1>
+        <p id="signInError" style="margin:0">This page only works from Finn's own link.</p>
+        <a class="btn btn--secondary" href="index.html">Go to the app</a>
+      </div>
+    </section>
+
+    <!-- ============ LIST OF WARDS ============ -->
+    <section id="listView" class="stack" hidden>
+      <div class="row row--between">
+        <h1 style="margin:0">Rate a ward</h1>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="hospitalFilter">Hospital</label>
+          <select id="hospitalFilter"><option value="">All hospitals</option></select>
+        </div>
+        <div class="field">
+          <label for="search">Ward or department</label>
+          <input id="search" type="search" autocomplete="off" placeholder="Search…">
+        </div>
+      </div>
+      <div class="row row--between">
+        <span id="count" class="status-line"></span>
+        <label class="check" style="margin:0"><input type="checkbox" id="unratedOnly"> Not rated yet</label>
+      </div>
+      <div id="message" role="status"></div>
+      <div id="list" class="rate-list"></div>
+    </section>
+
+    <!-- ============ SCORE ONE WARD ============ -->
+    <section id="scoreView" class="form-panel" hidden>
+      <div>
+        <div class="card__eyebrow" id="scoreHospital"></div>
+        <h2 id="scoreWard" style="margin:0"></h2>
+      </div>
+      <p class="status-line" style="margin:0">Tap a score. It saves straight away.</p>
+      <div class="score-grid" id="scoreGrid" role="group" aria-label="Score out of 10"></div>
+      <div id="scoreError" class="field__error" role="alert"></div>
+      <div class="row">
+        <button id="backButton" class="btn btn--secondary" type="button">Back to the list</button>
+        <button id="clearButton" class="btn btn--ghost" type="button">Remove rating</button>
+      </div>
+    </section>
+
+    <p id="loading" class="status-line">Loading…</p>
+  </main>
+
+  <script>
+    /* SUPABASE CONNECTION – same two values as index.html */
+    const SUPABASE_URL = "https://vruayefwgzwlwestsedo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_AWpInxkGOBc1bWFsJQjB_g_vBKftpm9";
+
+    const $ = id => document.getElementById(id);
+    let db = null;
+    let wards = [], hospitals = [], ratings = new Map(), current = null;
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function show(view) {
+      for (const id of ["signInView", "listView", "scoreView", "loading"]) $(id).hidden = id !== view;
+    }
+
+    async function loadAll() {
+      const [h, w, r] = await Promise.all([
+        db.from("hospitals").select("id, name").eq("active", true).order("name"),
+        db.from("wards").select("id, name, hospital_id").eq("active", true).order("name"),
+        db.from("ward_ratings").select("ward_id, score")
+      ]);
+      for (const res of [h, w, r]) if (res.error) throw res.error;
+      hospitals = h.data;
+      const shown = new Set(hospitals.map(x => x.id));
+      wards = w.data.filter(x => shown.has(x.hospital_id));
+      ratings = new Map(r.data.map(x => [x.ward_id, x.score]));
+      $("hospitalFilter").innerHTML = '<option value="">All hospitals</option>' +
+        hospitals.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
+    }
+
+    /* 0–4 red, 5–7 amber, 8–10 green */
+    const rag = s => s >= 8 ? "rag-green" : s >= 5 ? "rag-amber" : "rag-red";
+
+    const hospitalName = id => (hospitals.find(h => h.id === id) || {}).name || "";
+
+    function renderList() {
+      const hospitalId = Number($("hospitalFilter").value) || null;
+      const search = $("search").value.trim().toLowerCase();
+      const unratedOnly = $("unratedOnly").checked;
+      const items = wards
+        .filter(w => !hospitalId || w.hospital_id === hospitalId)
+        .filter(w => !search || w.name.toLowerCase().includes(search))
+        .filter(w => !unratedOnly || !ratings.has(w.id))
+        .sort((a, b) => hospitalName(a.hospital_id).localeCompare(hospitalName(b.hospital_id)) || a.name.localeCompare(b.name));
+      const rated = wards.filter(w => ratings.has(w.id)).length;
+      $("count").textContent = `${rated} of ${wards.length} wards rated`;
+      $("list").innerHTML = items.length ? items.map(w => {
+        const s = ratings.get(w.id);
+        return `
+          <button type="button" class="rate-row" data-id="${w.id}">
+            <span class="rate-row__main">
+              <span class="rate-row__title">${escapeHtml(w.name)}</span>
+              <div class="rate-row__sub">${escapeHtml(hospitalName(w.hospital_id))}</div>
+            </span>
+            <span class="mini-score ${s == null ? "mini-score--none" : rag(s)}" aria-label="${s == null ? "Not rated" : `Score ${s} out of 10`}">${s == null ? "–" : s}</span>
+          </button>`;
+      }).join("") : '<div class="empty">No wards match.</div>';
+    }
+
+    function openWard(id) {
+      current = wards.find(w => w.id === id);
+      $("scoreHospital").textContent = hospitalName(current.hospital_id);
+      $("scoreWard").textContent = current.name;
+      $("scoreError").textContent = "";
+      renderScores();
+      show("scoreView");
+      window.scrollTo(0, 0);
+    }
+
+    function renderScores() {
+      const s = ratings.get(current.id);
+      $("scoreGrid").innerHTML = Array.from({ length: 11 }, (_, n) =>
+        `<button type="button" class="score-btn" data-score="${n}" aria-pressed="${s === n}">${n}</button>`).join("");
+      $("clearButton").hidden = s == null;
+    }
+
+    async function setScore(score) {
+      $("scoreError").textContent = "";
+      const { error } = await db.rpc("set_finn_rating", { code: finnCode, ward: current.id, score });
+      if (error) {
+        $("scoreError").textContent = /not allowed/i.test(error.message)
+          ? "This link no longer works – ask Doug for the new one." : error.message;
+        return false;
+      }
+      if (score == null) ratings.delete(current.id); else ratings.set(current.id, score);
+      return true;
+    }
+
+    $("scoreGrid").addEventListener("click", async e => {
+      const b = e.target.closest("[data-score]");
+      if (!b) return;
+      const score = Number(b.dataset.score);
+      if (await setScore(score)) {
+        renderList();
+        show("listView");
+        $("message").innerHTML = `<div class="alert alert--ok">${escapeHtml(current.name)}: ${score} out of 10 saved.</div>`;
+        setTimeout(() => { $("message").innerHTML = ""; }, 3000);
+      }
+    });
+    $("clearButton").addEventListener("click", async () => {
+      if (await setScore(null)) { renderList(); show("listView"); }
+    });
+    $("backButton").addEventListener("click", () => show("listView"));
+    $("list").addEventListener("click", e => {
+      const row = e.target.closest(".rate-row");
+      if (row) openWard(Number(row.dataset.id));
+    });
+    for (const id of ["hospitalFilter", "search", "unratedOnly"]) {
+      $(id).addEventListener(id === "search" ? "input" : "change", renderList);
+    }
+
+    /* ---------- Finn's secret link: ratings.html?code=…  ----------
+       The code is remembered on Finn's phone, then removed from the address bar. */
+
+    const CODE_KEY = "dougs.finn.code";
+    let finnCode = new URLSearchParams(location.search).get("code");
+    if (finnCode) {
+      try { localStorage.setItem(CODE_KEY, finnCode); } catch (e) { /* kept for this visit only */ }
+      history.replaceState(null, "", location.pathname);
+    } else {
+      try { finnCode = localStorage.getItem(CODE_KEY); } catch (e) { finnCode = null; }
+    }
+
+    /* Anyone without Finn's link gets one of these at random */
+    const KEEP_OUT = [
+      ["Tut tut tut.", "This is Finn's page. Keep out."],
+      ["Nice try.", "Finn's Rating is rated by Finn. You are not Finn."],
+      ["Access denied.", "Finn has been informed. Finn is disappointed."],
+      ["Halt! Who goes there?", "Only Finn may pass. Everyone else, back to the ambulance."],
+      ["Oi!", "Hands off Finn's scores."],
+      ["Finn's Rating of you:", "0 out of 10 for sneaking in here."],
+      ["Wrong turn.", "Even the sat nav knows this isn't your page."],
+      ["This page is Finn-only.", "Like the last biscuit in the station."],
+      ["Stop right there.", "You'd need a much better parking spot than this to get in."],
+      ["No entry.", "Finn is very busy rating things. Including you."],
+      ["Error 401: Not Finn.", "Please return to your regularly scheduled shift."],
+      ["Ah ah ah.", "You didn't say the magic word. (The magic word is Finn.)"]
+    ];
+
+    function showSignIn(text) {
+      show("signInView");
+      if (text) { $("signInError").textContent = text; return; }
+      const [title, line] = KEEP_OUT[Math.floor(Math.random() * KEEP_OUT.length)];
+      $("keepOutTitle").textContent = title;
+      $("signInError").textContent = line;
+    }
+
+    (async function start() {
+      if (!window.supabase) { $("loading").textContent = "Couldn't load. Check the connection and refresh."; return; }
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+      if (!finnCode) { showSignIn(); return; }
+      const { data: ok, error } = await db.rpc("finn_code_ok", { code: finnCode });
+      if (error) { showSignIn("Couldn't check the link – refresh and try again."); return; }
+      if (!ok) {
+        try { localStorage.removeItem(CODE_KEY); } catch (e) {}
+        showSignIn("This link no longer works – ask Doug for the new one.");
+        return;
+      }
+      try { await loadAll(); renderList(); show("listView"); }
+      catch (e) { showSignIn(e.message); }
+    })();
+  </script>
+</body>
+</html>
