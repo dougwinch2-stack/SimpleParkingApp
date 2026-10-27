@@ -633,7 +633,9 @@
 
       try {
         db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-          auth: { persistSession: false }
+          auth: { persistSession: false },
+          // keepalive: the usage note still gets sent if the phone switches straight to Google Maps
+          global: { fetch: (url, options = {}) => fetch(url, { ...options, keepalive: true }) }
         });
 
         const { data, error } = await db.from("ward_cards").select("*");

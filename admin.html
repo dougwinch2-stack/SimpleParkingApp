@@ -576,7 +576,13 @@
       const dev = usage.devices || {};
 
       const hourMap = new Map((usage.by_hour || []).map(r => [r.hour, r.uses]));
-      const hours = Array.from({ length: 24 }, (_, h) => ({
+      // Crews work roughly 05:30 to 02:00, so the chart runs 05:00 → 02:00 (crossing midnight).
+      // If anything is ever used between 02:00 and 05:00, it shows the whole 24 hours instead.
+      const night = [2, 3, 4].some(h => hourMap.get(h));
+      const hourOrder = night ? Array.from({ length: 24 }, (_, h) => h)
+                              : [...Array.from({ length: 19 }, (_, i) => i + 5), 0, 1];
+      const hours = hourOrder.map(h => ({
+        hour: h,
         value: hourMap.get(h) || 0,
         title: `${String(h).padStart(2, "0")}:00 – ${String((h + 1) % 24).padStart(2, "0")}:00`,
         detail: plural(hourMap.get(h) || 0, "search or tap", "searches and taps")
@@ -646,6 +652,7 @@
           ${v.visits ? `<div class="table-wrap"><table class="table"><tbody>
             <tr><td>Visits</td><td class="num">${fmt(v.visits)}</td><td class="num"></td></tr>
             <tr><td>Tapped Navigate</td><td class="num">${fmt(v.navigated)}</td><td class="num">${pct(v.navigated, v.visits)}</td></tr>
+            <tr><td>Tapped Map, photos, diagram or phone (not Navigate)</td><td class="num">${fmt((v.tapped || 0) - (v.navigated || 0))}</td><td class="num">${pct((v.tapped || 0) - (v.navigated || 0), v.visits)}</td></tr>
             <tr><td>Searched, then tapped nothing</td><td class="num">${fmt(v.searched_no_tap)}</td><td class="num">${pct(v.searched_no_tap, v.visits)}</td></tr>
             <tr><td>Opened, then did nothing</td><td class="num">${fmt(v.opened_only)}</td><td class="num">${pct(v.opened_only, v.visits)}</td></tr>
             <tr><td>Typical time from opening to Navigate</td><td class="num" colspan="2">${secondsText(v.median_seconds)}</td></tr>
@@ -702,7 +709,10 @@
         dayTicks.map(i => ({ i, text: i === last ? "Today" : shortDate(days[i].day) })),
         "Bar chart of phones using the app each day. Full figures are in the table below.");
       drawBars($("hourChart"), hours,
-        [0, 6, 12, 18, 23].map(i => ({ i, text: String(i).padStart(2, "0") + ":00" })),
+        hours.map((x, i) => ({ i, h: x.hour }))
+          .filter(t => (hours.length === 24 ? [0, 6, 12, 18] : [5, 12, 18]).includes(t.h) || t.i === hours.length - 1)
+          // the last label marks where the chart ends (02:00, or midnight for the full day)
+          .map(t => ({ i: t.i, text: String(t.i === hours.length - 1 ? (t.h + 1) % 24 : t.h).padStart(2, "0") + ":00" })),
         "Bar chart of searches and taps in each hour of the day.");
       drawBars($("weekdayChart"), weekdays,
         weekdays.map((w, i) => ({ i, text: w.title })),
