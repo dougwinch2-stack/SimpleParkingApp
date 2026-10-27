@@ -305,6 +305,11 @@
       }
     })();
 
+    /* Doug's own phones and computers can be switched off in admin (Usage tab) */
+    const NOT_COUNTED = (() => {
+      try { return localStorage.getItem("dougs.nolog") === "on"; } catch (e) { return false; }
+    })();
+
     const DEVICE_TYPE = (() => {
       const touch = window.matchMedia && matchMedia("(pointer: coarse)").matches;
       if (!touch) return "computer";
@@ -345,7 +350,7 @@
 
     function logUsage(event) {
       if (event.ward_id && RECENT_KINDS.includes(event.kind)) rememberWard(event.ward_id);
-      if (!db) return;
+      if (!db || NOT_COUNTED) return;
       db.from("usage_events")
         .insert({
           device_id: DEVICE_ID,
@@ -572,31 +577,32 @@
     const WIDER_MAX = 5;
     let lastWiderCount = null;      // how many the last wider search found (for the usage log)
 
-    function editDistance(a, b) {   // letters added, removed, changed or swapped
+    function editDistance(a, b) {   // letters added, removed or changed
       const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
       for (let j = 1; j <= b.length; j++) d[0][j] = j;
       for (let i = 1; i <= a.length; i++) {
         for (let j = 1; j <= b.length; j++) {
           const cost = a[i - 1] === b[j - 1] ? 0 : 1;
           d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
-          if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
         }
       }
       return d[a.length][b.length];
     }
 
     // How well one typed word matches a card: 3 in the name, 2 elsewhere, 1 with a spelling slip, 0 not at all
-    function wordScore(word, nameText, allText, cardWords) {
+    function wordScore(word, nameText, allText, cardWords, anchored) {
       if (squash(nameText).includes(word)) return 3;
       if (squash(allText).includes(word)) return 2;
-      return fuzzyHit(word, cardWords) ? 1 : 0;
+      return fuzzyHit(word, cardWords, anchored) ? 1 : 0;
     }
 
     // A small spelling slip, against a whole word or the start of a longer one ("cardio thra…")
-    function fuzzyHit(word, cardWords) {
+    // "anchored": another typed word matched exactly, so a slip in the first letter is allowed too.
+    // On its own, a word must start with the right letter ("radiology" must not find "cardiology").
+    function fuzzyHit(word, cardWords, anchored = false) {
       if (word.length < 6) return false;                  // short words must be spelt right
       const allowed = word.length >= 8 ? 2 : 1;
-      return cardWords.some(w =>
+      return cardWords.filter(w => anchored || w[0] === word[0]).some(w =>
         (Math.abs(w.length - word.length) <= allowed && editDistance(word, w) <= allowed) ||
         (w.length > word.length && editDistance(word, w.slice(0, word.length)) <= allowed));
     }
@@ -608,7 +614,9 @@
         const nameText = item.ward.toLowerCase();
         const allText = [item.ward, item.floor, item.notes].join(" ").toLowerCase();
         const cardWords = allText.split(/[^a-z0-9&]+/).filter(w => w.length >= 4);
-        const scores = words.map(w => wordScore(w, nameText, allText, cardWords));
+        const exact = words.map(w => wordScore(w, nameText, allText, [], false));
+        const anchored = exact.some(x => x >= 2);
+        const scores = words.map((w, i) => exact[i] || wordScore(w, nameText, allText, cardWords, anchored));
         if (scores.every(x => x > 0)) return { item, ok: true, score: scores.reduce((a, b) => a + b, 0) };
         // Or the words run together: "cardio thracice" ≈ "cardiothoracic"
         const joined = words.join("");

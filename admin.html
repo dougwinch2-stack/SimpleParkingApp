@@ -167,6 +167,7 @@
 
       <!-- Usage report -->
       <div id="usageView" class="stack" hidden>
+        <div class="usage-card" id="deviceCard"></div>
         <div class="segmented" role="group" aria-label="Period" id="periods">
           <button type="button" data-days="7">Last 7 days</button>
           <button type="button" data-days="30" aria-pressed="true">Last 30 days</button>
@@ -483,15 +484,156 @@
       openFrom(target, id, {}, "checks");
     });
 
+    /* ---------- Does the app find this search now? (same rules as the app) ---------- */
+
+    function searchCards() {
+      const shown = new Set(hospitals.filter(h => h.active).map(h => h.id));
+      return wards.filter(w => w.active && shown.has(w.hospital_id))
+        .map(w => ({ ward: w.name, floor: w.floor || "", notes: w.notes || "", hospitalId: w.hospital_id }));
+    }
+
+    const squash = text => text.replace(/[\s\-–—'’,.()]+/g, "");
+    function searchMatches(item, search) {   // same as the app
+      const text = [item.ward, item.floor, item.notes].join(" ").toLowerCase();
+      return text.includes(search) || squash(text).includes(squash(search));
+    }
+
+    /* ---------- Wider search ----------
+       Only offered when the normal search finds nothing. Every word typed must be found
+       on the card (in any order); longer words may have a small spelling slip.
+       Looks in the chosen hospital first, then all hospitals; shows the closest few, best first. */
+
+
+    function editDistance(a, b) {   // letters added, removed or changed
+      const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+      for (let j = 1; j <= b.length; j++) d[0][j] = j;
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+        }
+      }
+      return d[a.length][b.length];
+    }
+
+    // How well one typed word matches a card: 3 in the name, 2 elsewhere, 1 with a spelling slip, 0 not at all
+    function wordScore(word, nameText, allText, cardWords, anchored) {
+      if (squash(nameText).includes(word)) return 3;
+      if (squash(allText).includes(word)) return 2;
+      return fuzzyHit(word, cardWords, anchored) ? 1 : 0;
+    }
+
+    // A small spelling slip, against a whole word or the start of a longer one ("cardio thra…")
+    // "anchored": another typed word matched exactly, so a slip in the first letter is allowed too.
+    // On its own, a word must start with the right letter ("radiology" must not find "cardiology").
+    function fuzzyHit(word, cardWords, anchored = false) {
+      if (word.length < 6) return false;                  // short words must be spelt right
+      const allowed = word.length >= 8 ? 2 : 1;
+      return cardWords.filter(w => anchored || w[0] === word[0]).some(w =>
+        (Math.abs(w.length - word.length) <= allowed && editDistance(word, w) <= allowed) ||
+        (w.length > word.length && editDistance(word, w.slice(0, word.length)) <= allowed));
+    }
+
+    function widerMatches(search, hospitalId) {
+      const words = search.toLowerCase().split(/[^a-z0-9&]+/).filter(w => w.length >= 2);
+      if (!words.length) return [];
+      return searchCards().filter(item => !hospitalId || String(item.hospitalId) === hospitalId).map(item => {
+        const nameText = item.ward.toLowerCase();
+        const allText = [item.ward, item.floor, item.notes].join(" ").toLowerCase();
+        const cardWords = allText.split(/[^a-z0-9&]+/).filter(w => w.length >= 4);
+        const exact = words.map(w => wordScore(w, nameText, allText, [], false));
+        const anchored = exact.some(x => x >= 2);
+        const scores = words.map((w, i) => exact[i] || wordScore(w, nameText, allText, cardWords, anchored));
+        if (scores.every(x => x > 0)) return { item, ok: true, score: scores.reduce((a, b) => a + b, 0) };
+        // Or the words run together: "cardio thracice" ≈ "cardiothoracic"
+        const joined = words.join("");
+        if (words.length > 1 && fuzzyHit(joined, cardWords)) return { item, ok: true, score: words.length };
+        return { item, ok: false, score: 0 };
+      })
+        .filter(r => r.ok)
+        .sort((a, b) => b.score - a.score || a.item.ward.length - b.item.ward.length)
+        .slice(0, 5);
+    }
+
+
+    function foundNow(text) {
+      const cards = searchCards();
+      if (cards.some(c => searchMatches(c, text))) return "found";
+      return widerMatches(text, "").length ? "wider" : "";
+    }
+
+    /* "radi", "radio", "radiology" typed in one go = one search: keep the longest */
+    function foldTyping(rows) {
+      return rows.filter(r => !rows.some(o => o !== r && o.text.length > r.text.length && o.text.startsWith(r.text) &&
+        Math.abs(new Date(o.last_time) - new Date(r.last_time)) < 3 * 60000));
+    }
+
+    /* ---------- This device: counted in the report or not ---------- */
+
+    function deviceCounted() {
+      try { return localStorage.getItem("dougs.nolog") !== "on"; } catch (e) { return true; }
+    }
+    function deviceId() {
+      try { return localStorage.getItem("dougs.device"); } catch (e) { return null; }
+    }
+
     /* ---------- Usage report ---------- */
 
     let usageDays = 30;
+    let showFixed = false;          // show "found nothing" searches that the app finds now
     let usage = null;          // last summary loaded
     let chartData = null;
     const fmt = n => Number(n || 0).toLocaleString("en-GB");
     const plural = (n, one, many = one + "s") => `${fmt(n)} ${Number(n) === 1 ? one : many}`;
 
+    function renderDeviceCard() {
+      const counted = deviceCounted();
+      $("deviceCard").innerHTML = `
+        <h3>This ${/Mobi|Android/i.test(navigator.userAgent) ? "phone" : "device"}</h3>
+        <p class="hint">${counted
+          ? "Your own use of the app on this device is being counted in the report."
+          : "Not counted – your use of the app on this device is left out of the report."}</p>
+        <div class="row">
+          <button type="button" class="btn ${counted ? "btn--primary" : "btn--secondary"} btn--sm" data-device="toggle">
+            ${counted ? "Don't count this device" : "Count this device again"}</button>
+          ${deviceId() ? `<button type="button" class="btn btn--ghost btn--sm" data-device="forget">Remove its past use</button>` : ""}
+        </div>
+        <p class="hint" id="deviceMsg" style="margin:var(--space-2) 0 0"></p>
+        <p class="hint" style="margin:0">Do this on each phone or computer you use the app on.</p>`;
+    }
+
+    $("usageView").addEventListener("click", async event => {
+      if (event.target.closest("[data-show-fixed]")) { showFixed = !showFixed; renderUsage(); return; }
+      const b = event.target.closest("[data-device]");
+      if (!b) return;
+      if (b.dataset.device === "toggle") {
+        try {
+          if (deviceCounted()) localStorage.setItem("dougs.nolog", "on");
+          else localStorage.removeItem("dougs.nolog");
+        } catch (e) { $("deviceMsg").textContent = "This browser won't remember the setting."; return; }
+        renderDeviceCard();
+        return;
+      }
+      if (b.dataset.confirm !== "yes") {
+        b.dataset.confirm = "yes"; b.textContent = "Tap again to remove";
+        setTimeout(() => { if (b.isConnected) { b.dataset.confirm = ""; b.textContent = "Remove its past use"; } }, 4000);
+        return;
+      }
+      b.disabled = true; b.textContent = "Removing…";
+      const { data, error } = await db.rpc("forget_device_usage", { device: deviceId() });
+      if (error) {
+        renderDeviceCard();
+        $("deviceMsg").textContent = /function|schema cache/i.test(error.message)
+          ? "Run 15_my_devices.sql in Supabase first." : friendlyError(error);
+        return;
+      }
+      renderDeviceCard();
+      $("deviceMsg").textContent = `Removed ${fmt(data)} records from this device.`;
+      loadUsage();
+    });
+
     function showUsage() {
+      renderDeviceCard();
       $("editView").hidden = true;
       $("listView").hidden = true;
       $("checksView").hidden = true;
@@ -569,7 +711,9 @@
       const days = fillDays(usage.by_day || [], usageDays);
       const nothingYet = !t.phones && !t.searches;
 
-      const noResults = usage.no_results || [];
+      const noResultsAll = foldTyping(usage.no_results || []).map(r => ({ ...r, now: foundNow(r.text) }));
+      const noResults = noResultsAll.filter(r => showFixed || !r.now);
+      const fixedCount = noResultsAll.filter(r => r.now).length;
       const topWards = usage.top_wards || [];
       const byHospital = usage.by_hospital || [];
       const loyal = usage.loyalty || {};
@@ -624,12 +768,14 @@
 
         <section class="usage-card">
           <h3>Searches that found nothing</h3>
-          <p class="hint">Could be a missing ward, or a name crews know it by. Search words are deleted after 90 days.</p>
+          <p class="hint">Could be a missing ward, or a name crews know it by. Part-typed searches are folded together. Search words are deleted after 90 days.</p>
           ${noResults.length ? `<div class="table-wrap"><table class="table">
             <thead><tr><th>Searched for</th><th class="num">Times</th><th>Last</th></tr></thead>
             <tbody>${noResults.map(r => `
-              <tr><td>${escapeHtml(r.text)}</td><td class="num">${fmt(r.times)}</td><td>${formatWhen(r.last_time)}</td></tr>`).join("")}
-            </tbody></table></div>` : '<div class="empty">None – every search found something.</div>'}
+              <tr><td>${escapeHtml(r.text)}${r.now ? `<div class="small" style="color:var(--ok-text);font-weight:700">✓ Found now${r.now === "wider" ? " (wider search)" : ""}</div>` : ""}</td>
+                  <td class="num">${fmt(r.times)}</td><td>${formatWhen(r.last_time)}</td></tr>`).join("")}
+            </tbody></table></div>` : `<div class="empty">${fixedCount ? "Nothing outstanding – the app now finds all of these." : "None – every search found something."}</div>`}
+          ${fixedCount ? `<button type="button" class="link-btn" data-show-fixed>${showFixed ? "Hide the ones found now" : `Show ${fixedCount} found now`}</button>` : ""}
         </section>
 
         <section class="usage-card">
