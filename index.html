@@ -550,6 +550,14 @@
       }
     }
 
+    /* Exact search, but spaces, dashes and apostrophes don't count:
+       "cardio thoracic" finds "Cardiothoracic", "castle point" finds "Castlepoint". */
+    const squash = text => text.replace(/[\s\-–—'’]+/g, "");
+    function searchMatches(item, search) {
+      const text = [item.ward, item.floor, item.notes].join(" ").toLowerCase();
+      return text.includes(search) || squash(text).includes(squash(search));
+    }
+
     function renderResults() {
       if (sharedWardId) {
         const item = wardsById.get(sharedWardId);
@@ -569,8 +577,7 @@
 
       const matches = wardsData
         .filter(item => !selectedHospital || String(item.hospitalId) === selectedHospital)
-        .filter(item => !search ||
-          [item.ward, item.floor, item.notes].join(" ").toLowerCase().includes(search))
+        .filter(item => !search || searchMatches(item, search))
         .sort((a, b) => a.hospital.localeCompare(b.hospital) || a.ward.localeCompare(b.ward));
 
       // With nothing typed, this phone's last few wards go first
