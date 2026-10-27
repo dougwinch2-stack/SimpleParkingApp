@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#0b4f6c">
   <meta name="description" content="Find a hospital ward, see the best place to park and start navigation.">
   <title>Doug's Parking App</title>
-  <meta name="dougs-link" content="Finn's Rating|ratings.html">
+  <!-- Finn's Rating switched off 27 Oct 2026. To bring back the menu item, uncomment:
+  <meta name="dougs-link" content="Finn's Rating|ratings.html"> -->
   <meta name="dougs-admin" content="admin.html">
   <link rel="icon" href="favicon.png" type="image/png">
   <link rel="icon" href="icon-shortcut-512.png" type="image/png" sizes="512x512">
@@ -216,6 +217,10 @@
        ================================================================= */
     const SUPABASE_URL = "https://vruayefwgzwlwestsedo.supabase.co";       // e.g. https://abcdefgh.supabase.co
     const SUPABASE_KEY = "sb_publishable_AWpInxkGOBc1bWFsJQjB_g_vBKftpm9";
+
+    /* Finn's Rating on the ward cards. Switched off 27 Oct 2026 (Finn's request).
+       The scores are kept in the database; set this to true to show them again. */
+    const SHOW_FINNS_RATING = false;
 
     /*
       Data comes from the database view "ward_cards" (one row per ward).
@@ -486,7 +491,7 @@
             <button type="button" class="corner-btn" data-share="${item.id}" aria-label="Share a link to ${escapeHtml(item.ward)}" title="Share">${SHARE_ICON}</button>
             <button type="button" class="corner-btn suggest-link" data-suggest="${item.id}" aria-label="Suggest a change to ${escapeHtml(item.ward)}" title="Suggest a change">${FEEDBACK_ICON}</button>
             </div>
-            ${item.finnScore == null ? "" : `
+            ${!SHOW_FINNS_RATING || item.finnScore == null ? "" : `
             <div class="finn finn--${item.finnScore >= 8 ? "green" : item.finnScore >= 5 ? "amber" : "red"}" role="img" aria-label="Finn's Rating: ${item.finnScore} out of 10">
               <span class="finn__label" aria-hidden="true">Finn's Rating</span>
               <span class="finn__square" aria-hidden="true">${item.finnScore}</span>
