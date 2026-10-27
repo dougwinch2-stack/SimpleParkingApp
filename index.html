@@ -384,6 +384,9 @@
         if (text === lastLoggedSearch) return;
         lastLoggedSearch = text;
         logUsage({ kind: "search", search_text: text, result_count: resultCount, hospital_id: selectedHospitalId() });
+        if (resultCount === 0 && lastWiderCount !== null) {
+          logUsage({ kind: "wider", search_text: text, result_count: lastWiderCount });
+        }
       }, 2000);
     }
 
@@ -567,7 +570,7 @@
        Searches all hospitals, shows the closest few, best first. */
 
     const WIDER_MAX = 5;
-    let widerFor = null;            // the search text the wider results were asked for
+    let lastWiderCount = null;      // how many the last wider search found (for the usage log)
 
     function editDistance(a, b) {   // letters added, removed, changed or swapped
       const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
@@ -619,26 +622,21 @@
 
     function renderWider(search) {
       const ranked = widerMatches(search);
+      lastWiderCount = ranked.length;
       const found = ranked.map(r => r.item);
       // Only call one "Best match" if it's clearly closer than the next
       const clearBest = ranked.length === 1 || (ranked.length > 1 && ranked[0].score > ranked[1].score);
-      logUsage({ kind: "wider", search_text: search.slice(0, 60), result_count: found.length });
       if (!found.length) {
-        summaryElement.textContent = "No close matches";
-        resultsElement.innerHTML = `<div class="empty">Still nothing for “${escapeHtml(search)}”.<br>
+        summaryElement.textContent = "0 results";
+        resultsElement.innerHTML = `<div class="empty">Nothing found for “${escapeHtml(search)}”, even with a wider search.<br>
           If it should be here, tap <strong>Can't find a ward? Tell us</strong> below.</div>`;
         return;
       }
-      summaryElement.textContent = `Closest ${found.length === 1 ? "match" : `${found.length} matches`} for “${search}” · all hospitals`;
+      summaryElement.textContent = `Nothing found – wider search used · ${found.length} close ${found.length === 1 ? "match" : "matches"}, all hospitals`;
       resultsElement.innerHTML = found.map((item, i) =>
         (i === 0 && clearBest ? '<div class="best-match">Best match</div>' : "") + cardHtml(item)).join("");
     }
 
-    resultsElement.addEventListener("click", event => {
-      if (!event.target.closest("[data-wider]")) return;
-      widerFor = searchInput.value.trim().toLowerCase();
-      renderWider(widerFor);
-    });
 
     function renderResults() {
       if (sharedWardId) {
@@ -676,13 +674,14 @@
       summaryElement.textContent = `${matches.length} ${matches.length === 1 ? "result" : "results"}` +
         (recentCount ? " · recent first" : "");
 
-      widerFor = null;
+      lastWiderCount = null;
+      if (!matches.length && search.length >= 3) {
+        renderWider(search);          // nothing found: try the wider search straight away
+        return 0;
+      }
       resultsElement.innerHTML = matches.length
         ? matches.map(cardHtml).join("")
-        : search.length >= 3
-          ? `<div class="empty">No exact match for “${escapeHtml(search)}”.
-               <div style="margin-top: var(--space-3)"><button type="button" class="btn btn--secondary" data-wider>Try a wider search</button></div></div>`
-          : '<div class="empty">No wards match your search.</div>';
+        : '<div class="empty">No wards match your search.</div>';
 
       return matches.length;
     }
