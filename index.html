@@ -567,7 +567,7 @@
     /* ---------- Wider search ----------
        Only offered when the normal search finds nothing. Every word typed must be found
        on the card (in any order); longer words may have a small spelling slip.
-       Searches all hospitals, shows the closest few, best first. */
+       Looks in the chosen hospital first, then all hospitals; shows the closest few, best first. */
 
     const WIDER_MAX = 5;
     let lastWiderCount = null;      // how many the last wider search found (for the usage log)
@@ -601,10 +601,10 @@
         (w.length > word.length && editDistance(word, w.slice(0, word.length)) <= allowed));
     }
 
-    function widerMatches(search) {
+    function widerMatches(search, hospitalId) {
       const words = search.toLowerCase().split(/[^a-z0-9&]+/).filter(w => w.length >= 2);
       if (!words.length) return [];
-      return wardsData.map(item => {
+      return wardsData.filter(item => !hospitalId || String(item.hospitalId) === hospitalId).map(item => {
         const nameText = item.ward.toLowerCase();
         const allText = [item.ward, item.floor, item.notes].join(" ").toLowerCase();
         const cardWords = allText.split(/[^a-z0-9&]+/).filter(w => w.length >= 4);
@@ -621,18 +621,22 @@
     }
 
     function renderWider(search) {
-      const ranked = widerMatches(search);
+      // Look in the chosen hospital first; if nothing there, look everywhere
+      const chosen = hospitalFilter.value;
+      let ranked = widerMatches(search, chosen);
+      let place = chosen ? hospitalFilter.options[hospitalFilter.selectedIndex].textContent : "all hospitals";
+      if (!ranked.length && chosen) { ranked = widerMatches(search, ""); place = "all hospitals"; }
       lastWiderCount = ranked.length;
       const found = ranked.map(r => r.item);
       // Only call one "Best match" if it's clearly closer than the next
       const clearBest = ranked.length === 1 || (ranked.length > 1 && ranked[0].score > ranked[1].score);
       if (!found.length) {
-        summaryElement.textContent = "0 results";
-        resultsElement.innerHTML = `<div class="empty">Nothing found for “${escapeHtml(search)}”, even with a wider search.<br>
+        summaryElement.textContent = "No match, and nothing close";
+        resultsElement.innerHTML = `<div class="empty">Nothing found for “${escapeHtml(search)}”.<br>
           If it should be here, tap <strong>Can't find a ward? Tell us</strong> below.</div>`;
         return;
       }
-      summaryElement.textContent = `Nothing found – wider search used · ${found.length} close ${found.length === 1 ? "match" : "matches"}, all hospitals`;
+      summaryElement.textContent = `No exact match · ${found.length} closest ${found.length === 1 ? "match" : "matches"}, ${place}`;
       resultsElement.innerHTML = found.map((item, i) =>
         (i === 0 && clearBest ? '<div class="best-match">Best match</div>' : "") + cardHtml(item)).join("");
     }
