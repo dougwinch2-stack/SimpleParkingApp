@@ -46,6 +46,9 @@
     .dialog h2 { margin: 0; }
     [hidden] { display: none !important; }
 
+    /* Wider search: label above the closest card */
+    .best-match { font-size: var(--text-sm); font-weight: 800; color: var(--ok-text); margin: 0 0 calc(-1 * var(--space-2)); }
+
     /* Finn's Rating: label over a small coloured square with the score */
     .finn { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 2px; }
     .finn__label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
@@ -550,13 +553,92 @@
       }
     }
 
-    /* Exact search, but spaces, dashes and apostrophes don't count:
+    /* Exact search, but spaces, dashes, apostrophes, commas and brackets don't count:
        "cardio thoracic" finds "Cardiothoracic", "castle point" finds "Castlepoint". */
-    const squash = text => text.replace(/[\s\-–—'’]+/g, "");
+    const squash = text => text.replace(/[\s\-–—'’,.()]+/g, "");
     function searchMatches(item, search) {
       const text = [item.ward, item.floor, item.notes].join(" ").toLowerCase();
       return text.includes(search) || squash(text).includes(squash(search));
     }
+
+    /* ---------- Wider search ----------
+       Only offered when the normal search finds nothing. Every word typed must be found
+       on the card (in any order); longer words may have a small spelling slip.
+       Searches all hospitals, shows the closest few, best first. */
+
+    const WIDER_MAX = 5;
+    let widerFor = null;            // the search text the wider results were asked for
+
+    function editDistance(a, b) {   // letters added, removed, changed or swapped
+      const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+      for (let j = 1; j <= b.length; j++) d[0][j] = j;
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+          if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+        }
+      }
+      return d[a.length][b.length];
+    }
+
+    // How well one typed word matches a card: 3 in the name, 2 elsewhere, 1 with a spelling slip, 0 not at all
+    function wordScore(word, nameText, allText, cardWords) {
+      if (squash(nameText).includes(word)) return 3;
+      if (squash(allText).includes(word)) return 2;
+      return fuzzyHit(word, cardWords) ? 1 : 0;
+    }
+
+    // A small spelling slip, against a whole word or the start of a longer one ("cardio thra…")
+    function fuzzyHit(word, cardWords) {
+      if (word.length < 6) return false;                  // short words must be spelt right
+      const allowed = word.length >= 8 ? 2 : 1;
+      return cardWords.some(w =>
+        (Math.abs(w.length - word.length) <= allowed && editDistance(word, w) <= allowed) ||
+        (w.length > word.length && editDistance(word, w.slice(0, word.length)) <= allowed));
+    }
+
+    function widerMatches(search) {
+      const words = search.toLowerCase().split(/[^a-z0-9&]+/).filter(w => w.length >= 2);
+      if (!words.length) return [];
+      return wardsData.map(item => {
+        const nameText = item.ward.toLowerCase();
+        const allText = [item.ward, item.floor, item.notes].join(" ").toLowerCase();
+        const cardWords = allText.split(/[^a-z0-9&]+/).filter(w => w.length >= 4);
+        const scores = words.map(w => wordScore(w, nameText, allText, cardWords));
+        if (scores.every(x => x > 0)) return { item, ok: true, score: scores.reduce((a, b) => a + b, 0) };
+        // Or the words run together: "cardio thracice" ≈ "cardiothoracic"
+        const joined = words.join("");
+        if (words.length > 1 && fuzzyHit(joined, cardWords)) return { item, ok: true, score: words.length };
+        return { item, ok: false, score: 0 };
+      })
+        .filter(r => r.ok)
+        .sort((a, b) => b.score - a.score || a.item.ward.length - b.item.ward.length)
+        .slice(0, WIDER_MAX);
+    }
+
+    function renderWider(search) {
+      const ranked = widerMatches(search);
+      const found = ranked.map(r => r.item);
+      // Only call one "Best match" if it's clearly closer than the next
+      const clearBest = ranked.length === 1 || (ranked.length > 1 && ranked[0].score > ranked[1].score);
+      logUsage({ kind: "wider", search_text: search.slice(0, 60), result_count: found.length });
+      if (!found.length) {
+        summaryElement.textContent = "No close matches";
+        resultsElement.innerHTML = `<div class="empty">Still nothing for “${escapeHtml(search)}”.<br>
+          If it should be here, tap <strong>Can't find a ward? Tell us</strong> below.</div>`;
+        return;
+      }
+      summaryElement.textContent = `Closest ${found.length === 1 ? "match" : `${found.length} matches`} for “${search}” · all hospitals`;
+      resultsElement.innerHTML = found.map((item, i) =>
+        (i === 0 && clearBest ? '<div class="best-match">Best match</div>' : "") + cardHtml(item)).join("");
+    }
+
+    resultsElement.addEventListener("click", event => {
+      if (!event.target.closest("[data-wider]")) return;
+      widerFor = searchInput.value.trim().toLowerCase();
+      renderWider(widerFor);
+    });
 
     function renderResults() {
       if (sharedWardId) {
@@ -594,9 +676,13 @@
       summaryElement.textContent = `${matches.length} ${matches.length === 1 ? "result" : "results"}` +
         (recentCount ? " · recent first" : "");
 
+      widerFor = null;
       resultsElement.innerHTML = matches.length
         ? matches.map(cardHtml).join("")
-        : '<div class="empty">No wards match your search.</div>';
+        : search.length >= 3
+          ? `<div class="empty">No exact match for “${escapeHtml(search)}”.
+               <div style="margin-top: var(--space-3)"><button type="button" class="btn btn--secondary" data-wider>Try a wider search</button></div></div>`
+          : '<div class="empty">No wards match your search.</div>';
 
       return matches.length;
     }
