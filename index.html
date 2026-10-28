@@ -650,6 +650,21 @@
     }
 
 
+    /* With something typed, closest names first:
+       0 name is exactly it · 1 name starts with it · 2 a word in the name starts with it
+       3 name contains it · 4 only the floor or notes mention it */
+    function matchRank(item, search) {
+      const name = item.ward.toLowerCase(), s = search.toLowerCase();
+      const plain = t => squash(t.replace(/\(.*?\)/g, ""));      // ignore bits in brackets, e.g. "(A205)"
+      // the name, or a short name in its brackets: "Accident & Emergency (A&E)", "(SDEC, A204)"
+      const shortNames = (name.match(/\(([^)]*)\)/g) || []).flatMap(b => b.slice(1, -1).split(/[,—–]| - /).map(x => squash(x.trim())));
+      if (plain(name) === squash(s) || squash(name) === squash(s) || shortNames.includes(squash(s))) return 0;
+      if (name.startsWith(s) || squash(name).startsWith(squash(s))) return 1;
+      if (name.split(/[^a-z0-9&]+/).some(w => w.startsWith(s.split(/\s+/)[0]) && name.includes(s))) return 2;
+      if (name.includes(s) || squash(name).includes(squash(s))) return 3;
+      return 4;
+    }
+
     function renderResults() {
       if (sharedWardId) {
         const item = wardsById.get(sharedWardId);
@@ -670,7 +685,8 @@
       const matches = wardsData
         .filter(item => !selectedHospital || String(item.hospitalId) === selectedHospital)
         .filter(item => !search || searchMatches(item, search))
-        .sort((a, b) => a.hospital.localeCompare(b.hospital) || a.ward.localeCompare(b.ward));
+        .sort((a, b) => (search ? matchRank(a, search) - matchRank(b, search) : 0) ||
+                        a.hospital.localeCompare(b.hospital) || a.ward.localeCompare(b.ward));
 
       // With nothing typed, this phone's last few wards go first
       let recentCount = 0;
