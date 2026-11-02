@@ -5,3 +5,4 @@ id,hospital_id,name,file,sort_order
 4,3,"Ground Floor",map-southend-ground-floor.jpg,3
 5,3,"Floor 1",map-southend-floor1.jpg,4
 6,3,"Floor 2",map-southend-floor2.jpg,5
+7,1,Site,map-basildon-site.jpg,1
